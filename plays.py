@@ -226,15 +226,21 @@ if play is not None:
         </div>
     """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
-    st.markdown("<div class='button-row-container'>", unsafe_allow_html=True)
-    col1, col2 = st.columns([1, 1])
+    st.markdown("""
+    <div style='display: flex; justify-content: center; width: 100%; margin: 1rem 0;'>
+        <div style='display: flex; flex-direction: row; flex-wrap: nowrap; gap: 0.5rem; width: 100%; max-width: 700px; justify-content: center;'>
+    """, unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
         if st.button("❌ Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
-    st.markdown("</div>", unsafe_allow_html=True)  # Close button container
+    st.markdown("""
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
     st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
