@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import random
@@ -8,6 +7,12 @@ def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
 
 df = load_data()
+
+# Clean the play type category up front
+rpo_keywords = ["rpo", "screen"]
+df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
+    lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
+)
 
 # Add full layout styling
 st.markdown("""
@@ -21,7 +26,7 @@ st.markdown("""
         border-radius: 16px;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
         max-width: 700px;
-        margin: 2rem auto;
+        margin: 3rem auto;
     }
     .slider-labels {
         display: flex;
@@ -39,52 +44,46 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# White box container content
-st.markdown('<div class="centered-card">', unsafe_allow_html=True)
+# Container with styled wrapper
+with st.container():
+    st.markdown('<div class="centered-card">', unsafe_allow_html=True)
 
-st.title("🏈 Play Caller Assistant")
+    st.title("🏈 Play Caller Assistant")
 
-col1, col2 = st.columns(2)
-with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"])
-with col2:
-    distance = st.selectbox("Select Distance", ["short", "medium", "long"])
+    col1, col2 = st.columns(2)
+    with col1:
+        down = st.selectbox("Select Down", ["1st", "2nd", "3rd"])
+    with col2:
+        distance = st.selectbox("Select Distance", ["short", "medium", "long"])
 
-coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
+    coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
 
-coverage_label = (
-    "Strictly Man" if coverage == 0 else
-    "Strictly Zone" if coverage == 1 else
-    "Mainly Man" if coverage < 0.5 else
-    "Mainly Zone" if coverage > 0.5 else
-    "Balanced"
-)
+    st.markdown("""
+        <div class="slider-labels">
+            <span>Strictly Man</span>
+            <span>Mainly Man</span>
+            <span>Balanced</span>
+            <span>Mainly Zone</span>
+            <span>Strictly Zone</span>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("""
-    <div class="slider-labels">
-        <span>Strictly Man</span>
-        <span>Mainly Man</span>
-        <span>Balanced</span>
-        <span>Mainly Zone</span>
-        <span>Strictly Zone</span>
-    </div>
-""", unsafe_allow_html=True)
+    coverage_label = (
+        "Strictly Man" if coverage == 0 else
+        "Strictly Zone" if coverage == 1 else
+        "Mainly Man" if coverage < 0.5 else
+        "Mainly Zone" if coverage > 0.5 else
+        "Balanced"
+    )
 
-st.caption(f"Tendency: {coverage_label}")
-call_button = st.button("📟 Call a Play")
+    st.caption(f"Tendency: {coverage_label}")
+    call_button = st.button("📟 Call a Play")
 
-st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Logic
+# Play selection logic
 def suggest_play():
-    subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
-    rpo_keywords = ["rpo", "screen"]
-    df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
-        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
-    )
-    subset["Play Type Category Cleaned"] = subset["Play Type Category"].apply(
-        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
-    )
+    subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)].copy()
 
     if down == "1st":
         weights = {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3}
@@ -110,14 +109,15 @@ def suggest_play():
         return None
 
     def score(row):
-        man = row.get("Effective vs Man", 0.5) or 0.5
-        zone = row.get("Effective vs Zone", 0.5) or 0.5
+        man = row["Effective vs Man"] if pd.notnull(row["Effective vs Man"]) else 0.5
+        zone = row["Effective vs Zone"] if pd.notnull(row["Effective vs Zone"]) else 0.5
         return (1 - coverage) * man + coverage * zone
 
     pool["Score"] = pool.apply(score, axis=1)
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
+# Call and display play
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -150,6 +150,7 @@ if call_button:
         st.markdown(f"**Progression**: {play['Progression']}")
         st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
         st.markdown(f"**Notes**: {play['Notes']}")
+        st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
     else:
         st.warning("No suitable play found. Try changing filters.")
 
