@@ -26,6 +26,8 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
+        st.success(f"✅ Logged: {row}", icon="✅")
+        st.session_state.current_play = None  # Auto clear after logging
     except Exception as e:
         st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
@@ -152,7 +154,7 @@ def suggest_play():
 if "current_play" not in st.session_state:
     st.session_state.current_play = None
 
-if st.button("🟢 Call a Play", key="call_play"):
+if st.button("🟢Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
 
 play = st.session_state.current_play
