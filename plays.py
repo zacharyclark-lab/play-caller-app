@@ -57,15 +57,6 @@ st.markdown(
 # Feedback to user
 st.caption(f"Tendency: {coverage_label}")
 
-coverage_label = (
-    "Strictly Man" if coverage == 0 else
-    "Strictly Zone" if coverage == 1 else
-    "Mainly Man" if coverage < 0.5 else
-    "Mainly Zone" if coverage > 0.5 else
-    "Balanced"
-)
-st.caption(f"Tendency: {coverage_label}")
-
 # Suggestion logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
