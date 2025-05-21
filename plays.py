@@ -10,7 +10,7 @@ def load_data():
 
 df = load_data()
 
-# Global styles
+# Styles and layout
 st.markdown(
     '''
     <style>
@@ -18,11 +18,12 @@ st.markdown(
         background: linear-gradient(to bottom, #f5f7fa 0%, #c3d8dc 100%);
     }
 
-    .main > div {
+    .play-wrapper {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 90vh;
+        min-height: 100vh;
+        flex-direction: column;
     }
 
     .play-box {
@@ -33,7 +34,7 @@ st.markdown(
         max-width: 700px;
         width: 100%;
         text-align: center;
-        margin: auto;
+        margin-bottom: 2rem;
     }
 
     .slider-labels {
@@ -48,14 +49,15 @@ st.markdown(
 
     .bg-footer {
         text-align: center;
-        margin-top: 2rem;
+        margin-top: 1rem;
     }
     </style>
+    <div class="play-wrapper">
     ''',
     unsafe_allow_html=True
 )
 
-# UI section
+# Entire content block inside the styled wrapper
 with st.container():
     st.markdown('<div class="play-box">', unsafe_allow_html=True)
 
@@ -94,7 +96,7 @@ with st.container():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Play suggestion logic
+# Play logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
 
@@ -138,7 +140,7 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# Result display
+# Display result
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -173,12 +175,13 @@ if call_button:
     else:
         st.warning("No suitable play found. Try changing filters.")
 
-# Footer image
+# Larger goalpost image
 st.markdown(
     '''
     <div class="bg-footer">
-        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="120">
+        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="220">
     </div>
+    </div> <!-- Close play-wrapper -->
     ''',
     unsafe_allow_html=True
 )
