@@ -18,7 +18,20 @@ with col1:
 with col2:
     distance = st.selectbox("Select Distance", ["short", "medium", "long"])
 
-coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
+coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage_slider")
+st.markdown(
+    """
+    <div style="display: flex; justify-content: space-between; font-size: 0.85em; padding: 0 5px;">
+        <span>Strictly Man</span>
+        <span>Mainly Man</span>
+        <span>Balanced</span>
+        <span>Mainly Zone</span>
+        <span>Strictly Zone</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 coverage_label = (
     "Strictly Man" if coverage == 0 else
     "Strictly Zone" if coverage == 1 else
