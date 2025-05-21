@@ -107,14 +107,20 @@ def suggest_play():
 if st.button("📟 Call a Play"):
     play = suggest_play()
     if play is not None:
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("**Formation:**")
-            st.markdown(f"{play['Formation']}")
-        with col2:
-            st.markdown("**Play Name:**")
-            st.markdown(f"{play['Play Name']}")
-
+        with st.container():
+            st.success(
+                f"""
+                <div style='display: flex; justify-content: space-between; padding: 5px 10px;'>
+                    <div>
+                        <strong>Formation:</strong><br>{play['Formation']}
+                    </div>
+                    <div>
+                        <strong>Play Name:</strong><br>{play['Play Name']}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         st.markdown(f"**Type**: {play['Play Type Category']} ({play['Play Type']})")
         st.markdown(f"**Depth**: {play['Play Depth']}")
         st.markdown(f"**Primary Read**: {play['Primary Read']}")
@@ -123,3 +129,4 @@ if st.button("📟 Call a Play"):
         st.markdown(f"**Notes**: {play['Notes']}")
     else:
         st.warning("No suitable play found. Try changing filters.")
+
