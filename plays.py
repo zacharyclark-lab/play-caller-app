@@ -199,12 +199,12 @@ if play is not None:
         </div>
     """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1], gap="small")
     with col1:
-        if st.button("Successful", key="success_btn", help="Mark this play as successful"):
+        if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
-        if st.button("Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
+        if st.button("❌ Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
 
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
