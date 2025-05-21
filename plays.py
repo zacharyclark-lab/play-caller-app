@@ -152,13 +152,8 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
-                if down == "1st":
-            st.session_state.next_down = "2nd"
-        elif down == "2nd":
-            st.session_state.next_down = "3rd"
-        else:
-            st.session_state.next_down = "1st"
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
+        # Reset current play
+        st.session_state.current_play = None        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
         # Reset current play
         st.session_state.current_play = None
