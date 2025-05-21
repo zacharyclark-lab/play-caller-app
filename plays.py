@@ -17,11 +17,11 @@ def connect_to_gsheet():
     )
     client = gspread.authorize(creds)
     sheet = client.open("PlayCaller Logs")
-results_sheet = sheet.worksheet("results")
-fav_sheet = sheet.worksheet("favorite_plays")
     return sheet
 
 sheet = connect_to_gsheet()
+results_sheet = sheet.worksheet("results")
+fav_sheet = sheet.worksheet("favorite_plays")
 
 # --- Session state defaults ---
 if "current_play" not in st.session_state:
@@ -113,8 +113,6 @@ coverage_label = (
     "Mainly Zone" if coverage > 0.5 else
     "Balanced"
 )
-
-
 
 # --- Play selection logic ---
 def suggest_play():
