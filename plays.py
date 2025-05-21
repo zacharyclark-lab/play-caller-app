@@ -153,7 +153,7 @@ def suggest_play():
 if "current_play" not in st.session_state:
     st.session_state.current_play = None
 
-if st.button("📿 Call a Play", key="call_play"):
+if st.button("🟢 Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
 
 play = st.session_state.current_play
