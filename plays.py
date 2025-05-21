@@ -26,9 +26,9 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
-        st.success(f"✅ Logged: {row}")
+        st.success(f"✅ Logged: {row}", icon="✅")
     except Exception as e:
-        st.error(f"❌ Failed to write to sheet: {e}")
+        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
 # Load and prepare data
 @st.cache_data
@@ -65,11 +65,11 @@ st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
 with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"])
+    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
 with col2:
-    distance = st.selectbox("Select Distance", ["short", "medium", "long"])
+    distance = st.selectbox("Select Distance", ["short", "medium", "long"], key="distance")
 
-coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
+coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage")
 
 st.markdown("""
     <div class="slider-labels">
@@ -140,24 +140,22 @@ if st.button("📿 Call a Play", key="call_play"):
 play = st.session_state.current_play
 if play is not None:
     st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
-    st.markdown(f"**Formation**: {play['Formation']}")
-    st.markdown(f"**Play Type**: {play['Play Type']}")
-    st.markdown(f"**Depth**: {play['Play Depth']}")
-    st.markdown(f"**Primary Read**: {play['Primary Read']}")
-    st.markdown(f"**Progression**: {play['Progression']}")
-    st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
-    st.markdown(f"**Notes**: {play['Notes']}")
-    st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
+    st.markdown(f"**Formation**: {play['Formation']}", unsafe_allow_html=True)
+    st.markdown(f"**Play Type**: {play['Play Type']}", unsafe_allow_html=True)
+    st.markdown(f"**Depth**: {play['Play Depth']}", unsafe_allow_html=True)
+    st.markdown(f"**Primary Read**: {play['Primary Read']}", unsafe_allow_html=True)
+    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
+    st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
+    st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
+    st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Mark as Successful", key="success_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
-            st.success("✅ Marked as successful and logged.")
     with col2:
         if st.button("❌ Mark as Unsuccessful", key="fail_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
-            st.info("❌ Marked as unsuccessful and logged.")
 
 # --- Footer ---
 st.markdown("""
