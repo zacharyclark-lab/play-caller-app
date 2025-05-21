@@ -58,6 +58,25 @@ st.markdown("""
         text-align: center;
         margin-top: 3rem;
     }
+    .highlight-box {
+        border-left: 5px solid #28a745;
+        background-color: #d4edda;
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin: 2rem auto 1rem auto;
+        font-size: 0.95em;
+        max-width: 700px;
+    }
+    .highlight-flex {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .highlight-item {
+        min-width: 120px;
+        flex: 1;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -139,15 +158,18 @@ if st.button("📿 Call a Play", key="call_play"):
 
 play = st.session_state.current_play
 if play is not None:
-    st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
-    st.markdown(f"**Formation**: {play['Formation']}", unsafe_allow_html=True)
-    st.markdown(f"**Play Type**: {play['Play Type']}", unsafe_allow_html=True)
-    st.markdown(f"**Depth**: {play['Play Depth']}", unsafe_allow_html=True)
-    st.markdown(f"**Primary Read**: {play['Primary Read']}", unsafe_allow_html=True)
-    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
-    st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
-    st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
-    st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
+    st.markdown("""
+        <div class="highlight-box">
+            <div class="highlight-flex">
+                <div class="highlight-item">
+                    <strong>Formation:</strong><br>{}
+                </div>
+                <div class="highlight-item">
+                    <strong>Play Name:</strong><br>{}
+                </div>
+            </div>
+        </div>
+    """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -156,6 +178,14 @@ if play is not None:
     with col2:
         if st.button("❌ Mark as Unsuccessful", key="fail_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
+
+    st.markdown(f"**Play Type**: {play['Play Type']}", unsafe_allow_html=True)
+    st.markdown(f"**Depth**: {play['Play Depth']}", unsafe_allow_html=True)
+    st.markdown(f"**Primary Read**: {play['Primary Read']}", unsafe_allow_html=True)
+    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
+    st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
+    st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
+    st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
 
 # --- Footer ---
 st.markdown("""
