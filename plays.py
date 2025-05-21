@@ -24,7 +24,11 @@ sheet = connect_to_gsheet()
 def log_play_result(play_name, down, distance, coverage, success):
     timestamp = datetime.now().isoformat()
     row = [timestamp, play_name, down, distance, coverage, success]
-    sheet.append_row(row)
+    try:
+        sheet.append_row(row)
+        st.success(f"✅ Logged: {row}")
+    except Exception as e:
+        st.error(f"❌ Failed to write to sheet: {e}")
 
 # Load and prepare data
 @st.cache_data
