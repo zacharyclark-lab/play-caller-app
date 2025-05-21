@@ -101,7 +101,7 @@ st.markdown("""
 st.title("🏈 Play Caller Assistant")
 
 # Down selector uses the staged value, only updated after success/fail
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 1], gap="small")
 with col1:
     down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
 with col2:
@@ -211,7 +211,7 @@ if play is not None:
         </div>
     """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
-    st.markdown("<div class='button-row'>", unsafe_allow_html=True)
+    st.markdown("<div class='button-row' style='display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 0.5rem;'>", unsafe_allow_html=True)
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
