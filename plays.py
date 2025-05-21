@@ -94,9 +94,12 @@ def suggest_play():
         return None
 
     def score(row):
-        man = row["Effective vs Man"] if pd.notnull(row["Effective vs Man"]) else 0.5
-        zone = row["Effective vs Zone"] if pd.notnull(row["Effective vs Zone"]) else 0.5
-        return (1 - coverage) * man + coverage * zone
+        if category == "dropback":
+            man = row["Effective vs Man"] if pd.notnull(row["Effective vs Man"]) else 0.5
+            zone = row["Effective vs Zone"] if pd.notnull(row["Effective vs Zone"]) else 0.5
+            return (1 - coverage) * man + coverage * zone
+        else:
+            return 0.5  # Neutral score for RPO and run/option
 
     pool["Score"] = pool.apply(score, axis=1)
     top = pool.sort_values("Score", ascending=False).head(10)
