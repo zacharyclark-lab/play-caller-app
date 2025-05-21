@@ -26,8 +26,15 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
-        st.success(f"✅ Logged: {row}", icon="✅")
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None  # Auto clear after logging
+        # Auto-advance down
+        if down == "1st":
+            st.session_state.down = "2nd"
+        elif down == "2nd":
+            st.session_state.down = "3rd"
+        else:
+            st.session_state.down = "1st"
     except Exception as e:
         st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
