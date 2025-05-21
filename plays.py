@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -8,26 +9,19 @@ def load_data():
 
 df = load_data()
 
-# 🧼 Custom Styling (Card-like white box effect)
+# Add full layout styling
 st.markdown("""
     <style>
     .main {
         background: linear-gradient(to bottom, #f5f7fa 0%, #c3d8dc 100%) !important;
     }
-    .stApp {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding-top: 40px;
-    }
-    .content-card {
+    .centered-card {
         background-color: white;
         padding: 2.5rem;
         border-radius: 16px;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
         max-width: 700px;
-        width: 100%;
-        margin: 0 auto;
+        margin: 2rem auto;
     }
     .slider-labels {
         display: flex;
@@ -40,13 +34,14 @@ st.markdown("""
     }
     .bg-footer {
         text-align: center;
-        margin-top: 2rem;
+        margin-top: 3rem;
     }
     </style>
-    <div class='content-card'>
 """, unsafe_allow_html=True)
 
-# 🏈 App Title & Inputs
+# White box container content
+st.markdown('<div class="centered-card">', unsafe_allow_html=True)
+
 st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
@@ -56,6 +51,7 @@ with col2:
     distance = st.selectbox("Select Distance", ["short", "medium", "long"])
 
 coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
+
 coverage_label = (
     "Strictly Man" if coverage == 0 else
     "Strictly Zone" if coverage == 1 else
@@ -73,10 +69,13 @@ st.markdown("""
         <span>Strictly Zone</span>
     </div>
 """, unsafe_allow_html=True)
+
 st.caption(f"Tendency: {coverage_label}")
 call_button = st.button("📟 Call a Play")
 
-# 💡 Logic
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
     rpo_keywords = ["rpo", "screen"]
@@ -119,7 +118,6 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# 📋 Result
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -130,8 +128,9 @@ if call_button:
                 background-color: #d4edda;
                 padding: 12px 15px;
                 border-radius: 6px;
-                margin-bottom: 10px;
+                margin: 2rem auto 1rem auto;
                 font-size: 0.95em;
+                max-width: 700px;
             ">
                 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
                     <div style="min-width: 120px; flex: 1;">
@@ -154,13 +153,9 @@ if call_button:
     else:
         st.warning("No suitable play found. Try changing filters.")
 
-# 🏟️ Footer image
-st.markdown(
-    """
-    </div> <!-- close content-card -->
+# Footer image
+st.markdown("""
     <div class="bg-footer">
-        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="220">
+        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
     </div>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
