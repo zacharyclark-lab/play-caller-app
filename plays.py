@@ -16,7 +16,9 @@ def connect_to_gsheet():
         st.secrets["gcp_service_account"], scope
     )
     client = gspread.authorize(creds)
-    sheet = client.open("PlayCaller Logs").worksheet("results")
+    sheet = client.open("PlayCaller Logs")
+results_sheet = sheet.worksheet("results")
+fav_sheet = sheet.worksheet("favorite_plays")
     return sheet
 
 sheet = connect_to_gsheet()
@@ -153,12 +155,29 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
+# --- Favorite Play Management ---
+def load_favorites():
+    try:
+        favs = fav_sheet.col_values(1)
+        return set(favs)
+    except:
+        return set()
+
+def add_favorite(play_name):
+    try:
+        fav_sheet.append_row([play_name])
+        st.toast("🌟 Added to favorites!")
+    except Exception as e:
+        st.error(f"Could not add favorite: {e}")
+
+favorites = load_favorites()
+
 # --- Log play ---
 def log_play_result(play_name, down, distance, coverage, success):
     timestamp = datetime.now().isoformat()
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
-        sheet.append_row(row)
+        results_sheet.append_row(row)
         st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
     except Exception as e:
@@ -197,6 +216,12 @@ if play is not None:
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
     st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
     st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
+
+    if play["Play Name"] not in favorites:
+        if st.button("🌟 Add to Favorites"):
+            add_favorite(play["Play Name"])
+    else:
+        st.info("🌟 This play is in your favorites.")
 
 # --- Footer ---
 st.markdown("""
