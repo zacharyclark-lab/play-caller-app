@@ -20,7 +20,16 @@ with col2:
 
 coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage_slider")
 
-# Visual label guide under slider
+# Define coverage label BEFORE using it
+coverage_label = (
+    "Strictly Man" if coverage == 0 else
+    "Strictly Zone" if coverage == 1 else
+    "Mainly Man" if coverage < 0.5 else
+    "Mainly Zone" if coverage > 0.5 else
+    "Balanced"
+)
+
+# Display improved custom labels under slider
 st.markdown(
     """
     <style>
@@ -45,7 +54,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Textual feedback below the labels
+# Feedback to user
 st.caption(f"Tendency: {coverage_label}")
 
 coverage_label = (
