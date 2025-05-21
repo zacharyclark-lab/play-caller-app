@@ -40,6 +40,14 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
 # --- UI layout and styling ---
 st.markdown("""
     <style>
+    html, body, .main {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    h1 {
+        font-size: 1.8rem !important;
+        margin-bottom: 1rem !important;
+    }
     .slider-labels {
         display: flex;
         justify-content: space-between;
