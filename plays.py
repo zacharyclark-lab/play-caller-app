@@ -1,105 +1,84 @@
-
 import streamlit as st
 import pandas as pd
 import random
 
-# Load the play database
 @st.cache_data
 def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
 
 df = load_data()
 
-# Styles and layout
-st.markdown(
-    '''
+# 🧼 Custom Styling (Card-like white box effect)
+st.markdown("""
     <style>
-    body {
-        background: linear-gradient(to bottom, #f5f7fa 0%, #c3d8dc 100%);
+    .main {
+        background: linear-gradient(to bottom, #f5f7fa 0%, #c3d8dc 100%) !important;
     }
-
-    .play-wrapper {
+    .stApp {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 100vh;
-        flex-direction: column;
+        padding-top: 40px;
     }
-
-    .play-box {
+    .content-card {
         background-color: white;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
         max-width: 700px;
         width: 100%;
-        text-align: center;
-        margin-bottom: 2rem;
+        margin: 0 auto;
     }
-
     .slider-labels {
         display: flex;
         justify-content: space-between;
-        padding: 2px 10px 10px 10px;
         font-size: 0.85em;
         color: #6c757d;
         margin-top: -10px;
         margin-bottom: 5px;
+        padding: 0 5px;
     }
-
     .bg-footer {
         text-align: center;
-        margin-top: 1rem;
+        margin-top: 2rem;
     }
     </style>
-    <div class="play-wrapper">
-    ''',
-    unsafe_allow_html=True
+    <div class='content-card'>
+""", unsafe_allow_html=True)
+
+# 🏈 App Title & Inputs
+st.title("🏈 Play Caller Assistant")
+
+col1, col2 = st.columns(2)
+with col1:
+    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"])
+with col2:
+    distance = st.selectbox("Select Distance", ["short", "medium", "long"])
+
+coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01)
+coverage_label = (
+    "Strictly Man" if coverage == 0 else
+    "Strictly Zone" if coverage == 1 else
+    "Mainly Man" if coverage < 0.5 else
+    "Mainly Zone" if coverage > 0.5 else
+    "Balanced"
 )
 
-# Entire content block inside the styled wrapper
-with st.container():
-    st.markdown('<div class="play-box">', unsafe_allow_html=True)
+st.markdown("""
+    <div class="slider-labels">
+        <span>Strictly Man</span>
+        <span>Mainly Man</span>
+        <span>Balanced</span>
+        <span>Mainly Zone</span>
+        <span>Strictly Zone</span>
+    </div>
+""", unsafe_allow_html=True)
+st.caption(f"Tendency: {coverage_label}")
+call_button = st.button("📟 Call a Play")
 
-    st.title("🏈 Play Caller Assistant")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        down = st.selectbox("Select Down", ["1st", "2nd", "3rd"])
-    with col2:
-        distance = st.selectbox("Select Distance", ["short", "medium", "long"])
-
-    coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage_slider")
-
-    coverage_label = (
-        "Strictly Man" if coverage == 0 else
-        "Strictly Zone" if coverage == 1 else
-        "Mainly Man" if coverage < 0.5 else
-        "Mainly Zone" if coverage > 0.5 else
-        "Balanced"
-    )
-
-    st.markdown(
-        '''
-        <div class="slider-labels">
-            <span>Strictly Man</span>
-            <span>Mainly Man</span>
-            <span>Balanced</span>
-            <span>Mainly Zone</span>
-            <span>Strictly Zone</span>
-        </div>
-        ''',
-        unsafe_allow_html=True
-    )
-    st.caption(f"Tendency: {coverage_label}")
-    call_button = st.button("📟 Call a Play")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# Play logic
+# 💡 Logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
-
     rpo_keywords = ["rpo", "screen"]
     df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
         lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
@@ -140,7 +119,7 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# Display result
+# 📋 Result
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -175,13 +154,13 @@ if call_button:
     else:
         st.warning("No suitable play found. Try changing filters.")
 
-# Larger goalpost image
+# 🏟️ Footer image
 st.markdown(
-    '''
+    """
+    </div> <!-- close content-card -->
     <div class="bg-footer">
         <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="220">
     </div>
-    </div> <!-- Close play-wrapper -->
-    ''',
+    """,
     unsafe_allow_html=True
 )
