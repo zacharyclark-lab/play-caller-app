@@ -43,6 +43,12 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
 # --- UI layout and styling ---
 st.markdown("""
     <style>
+    body, html, .main, .block-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
     .button-row-container {
         display: flex;
         justify-content: center;
@@ -89,14 +95,14 @@ st.markdown("""
     }
     .bg-footer {
         text-align: center;
-        margin-top: 3rem;
+        margin-top: 1rem;
     }
     .highlight-box {
         border-left: 5px solid #28a745;
         background-color: #d4edda;
         padding: 12px 15px;
         border-radius: 6px;
-        margin: 2rem auto 1rem auto;
+        margin: 0.5rem auto;
         font-size: 0.95em;
         max-width: 700px;
     }
@@ -227,7 +233,7 @@ if play is not None:
     """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
     st.markdown("""
-    <div style='display: flex; justify-content: center; width: 100%; margin: 1rem 0;'>
+    <div style='display: flex; justify-content: center; width: 100%; margin: 0.5rem 0;'>
         <div style='display: flex; flex-direction: row; flex-wrap: nowrap; gap: 0.5rem; width: 100%; max-width: 700px; justify-content: center;'>
     """, unsafe_allow_html=True)
     col1, col2 = st.columns(2)
