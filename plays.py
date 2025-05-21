@@ -43,6 +43,16 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
 # --- UI layout and styling ---
 st.markdown("""
     <style>
+    .button-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .button-row button {
+        flex: 1;
+        font-size: 0.9rem !important;
+    }
     html, body, .main {
         padding-top: 0 !important;
         margin-top: 0 !important;
@@ -199,13 +209,15 @@ if play is not None:
         </div>
     """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 1], gap="small")
+    st.markdown("<div class='button-row'>", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
         if st.button("❌ Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
     st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
