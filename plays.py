@@ -25,7 +25,6 @@ sheet = connect_to_gsheet()
 if "current_play" not in st.session_state:
     st.session_state.current_play = None
 
-
 # --- Load and prepare data ---
 @st.cache_data
 def load_data():
@@ -152,12 +151,10 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
-        # Reset current play
         st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
-        
-
-
+    except Exception as e:
+        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
 if st.button("🟢Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
