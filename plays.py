@@ -6,9 +6,10 @@ import random
 @st.cache_data
 def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
+
 df = load_data()
 
-st.title("🧠 Play Caller Assistant")
+st.title("🏈 Play Caller Assistant")
 
 # User inputs
 col1, col2 = st.columns(2)
@@ -27,26 +28,62 @@ coverage_label = (
 )
 st.caption(f"Tendency: {coverage_label}")
 
-# Play filtering logic
+# Suggestion logic
 def suggest_play():
-    subset = df[df["Play Depth"].str.contains(distance)]
-    if subset.empty:
+    subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
+
+    # Categorize RPOs separately if labeled as "rpo" or "screen" in type (if not, adapt to "dropback")
+    rpo_keywords = ["rpo", "screen"]
+    df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
+        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
+    )
+    subset["Play Type Category Cleaned"] = subset["Play Type Category"].apply(
+        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
+    )
+
+    # Determine weights based on situation
+    if down == "1st":
+        weights = {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3}
+    elif down == "2nd" and distance == "long":
+        weights = {"dropback": 0.7, "rpo": 0.3, "run_option": 0.0}
+    elif down == "3rd" and distance == "long":
+        weights = {"dropback": 1.0, "rpo": 0.0, "run_option": 0.0}
+    else:
+        weights = {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2}
+
+    # Sample one category based on weights
+    available_categories = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"] == cat].empty]
+    if not available_categories:
+        return None
+    category = random.choices(
+        population=available_categories,
+        weights=[weights[cat] for cat in available_categories],
+        k=1
+    )[0]
+
+    pool = subset[subset["Play Type Category Cleaned"] == category].copy()
+
+    if pool.empty:
         return None
 
     def score(row):
-        return (1 - coverage) * row["Effective vs Man"] + coverage * row["Effective vs Zone"]
+        man = row.get("Effective vs Man", 0.5) or 0.5
+        zone = row.get("Effective vs Zone", 0.5) or 0.5
+        return (1 - coverage) * man + coverage * zone
 
-    subset["Score"] = subset.apply(score, axis=1)
-    weighted = subset.sort_values(by="Score", ascending=False).head(10)
-    return weighted.sample(1).iloc[0]
+    pool["Score"] = pool.apply(score, axis=1)
+    top = pool.sort_values("Score", ascending=False).head(10)
+    return top.sample(1).iloc[0] if not top.empty else None
 
 if st.button("📟 Call a Play"):
     play = suggest_play()
     if play is not None:
-        st.success(f"**{play['Play Name']}**")
-        st.markdown(f"**Type**: {play['Play Type Category']}")
+        st.success(f"**{play['Formation']} – {play['Play Name']}**")
+        st.markdown(f"**Type**: {play['Play Type Category']} ({play['Play Type']})")
         st.markdown(f"**Depth**: {play['Play Depth']}")
         st.markdown(f"**Primary Read**: {play['Primary Read']}")
+        st.markdown(f"**Progression**: {play['Progression']}")
+        st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
         st.markdown(f"**Notes**: {play['Notes']}")
     else:
         st.warning("No suitable play found. Try changing filters.")
