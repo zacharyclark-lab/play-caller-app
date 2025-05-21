@@ -89,7 +89,7 @@ st.markdown("""
 st.title("🏈 Play Caller Assistant")
 
 # Down selector uses the staged value, only updated after success/fail
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([1, 1])
 with col1:
     down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
 with col2:
@@ -187,8 +187,7 @@ if st.button("🟢Call a Play", key="call_play"):
 
 play = st.session_state.current_play
 if play is not None:
-    st.markdown("""
-        <div class="highlight-box">
+    st.markdown("""<div class=\"highlight-box\" style=\"margin-top: 0.5rem !important;\">
             <div class="highlight-flex">
                 <div class="highlight-item">
                     <strong>Formation:</strong><br>{}
@@ -202,19 +201,15 @@ if play is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ Mark as Successful", key="success_btn"):
+        if st.button("Successful", key="success_btn", help="Mark this play as successful"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
-        if st.button("❌ Mark as Unsuccessful", key="fail_btn"):
+        if st.button("Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
 
-    st.markdown(f"**Play Type**: {play['Play Type']}", unsafe_allow_html=True)
-    st.markdown(f"**Depth**: {play['Play Depth']}", unsafe_allow_html=True)
-    st.markdown(f"**Primary Read**: {play['Primary Read']}", unsafe_allow_html=True)
-    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
+    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
     st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
-    st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
 
     if play["Play ID"] not in favorites:
         if st.button("🌟 Add to Favorites"):
