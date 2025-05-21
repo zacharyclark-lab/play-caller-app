@@ -21,24 +21,13 @@ def connect_to_gsheet():
 
 sheet = connect_to_gsheet()
 
-def log_play_result(play_name, down, distance, coverage, success):
-    timestamp = datetime.now().isoformat()
-    row = [timestamp, play_name, down, distance, coverage, success]
-    try:
-        sheet.append_row(row)
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
-        st.session_state.current_play = None  # Auto clear after logging
-        # Auto-advance down
-        if down == "1st":
-            st.session_state.down = "2nd"
-        elif down == "2nd":
-            st.session_state.down = "3rd"
-        else:
-            st.session_state.down = "1st"
-    except Exception as e:
-        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
+# --- Session state defaults ---
+if "current_play" not in st.session_state:
+    st.session_state.current_play = None
+if "next_down" not in st.session_state:
+    st.session_state.next_down = "1st"
 
-# Load and prepare data
+# --- Load and prepare data ---
 @st.cache_data
 def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
@@ -92,7 +81,7 @@ st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
 with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
+    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down", index=["1st", "2nd", "3rd"].index(st.session_state.next_down))
 with col2:
     distance = st.selectbox("Select Distance", ["short", "medium", "long"], key="distance")
 
@@ -157,9 +146,23 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# --- Session state to preserve play across reruns ---
-if "current_play" not in st.session_state:
-    st.session_state.current_play = None
+# --- Log play ---
+def log_play_result(play_name, down, distance, coverage, success):
+    timestamp = datetime.now().isoformat()
+    row = [timestamp, play_name, down, distance, coverage, success]
+    try:
+        sheet.append_row(row)
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
+        st.session_state.current_play = None
+        # Stage next down
+        if down == "1st":
+            st.session_state.next_down = "2nd"
+        elif down == "2nd":
+            st.session_state.next_down = "3rd"
+        else:
+            st.session_state.next_down = "1st"
+    except Exception as e:
+        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
 if st.button("🟢Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
