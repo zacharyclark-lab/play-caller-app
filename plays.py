@@ -160,11 +160,8 @@ def log_play_result(play_name, down, distance, coverage, success):
             st.session_state.next_down = "1st"
         st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
-        # Reset current play and show toast
+        # Reset current play
         st.session_state.current_play = None
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
-    except Exception as e:
-        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
 
 
