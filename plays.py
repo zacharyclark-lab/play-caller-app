@@ -156,17 +156,21 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
+        # Stage the next down BEFORE UI is refreshed
+        if down == "1st":
+            st.session_state.next_down = "2nd"
+        elif down == "2nd":
+            st.session_state.next_down = "3rd"
+        else:
+            st.session_state.next_down = "1st"
         st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
-        st.session_state.submitted_result = True
+        # Reset current play and show toast
+        st.session_state.current_play = None
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
     except Exception as e:
         st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
-# Update next down if last play was marked
-if st.session_state.submitted_result:
-    st.session_state.submitted_result = False
-    if st.session_state.down == "1st":
-        st.session_state.next_down = "2nd"
     elif st.session_state.down == "2nd":
         st.session_state.next_down = "3rd"
     else:
