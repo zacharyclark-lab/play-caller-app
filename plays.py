@@ -107,7 +107,14 @@ def suggest_play():
 if st.button("📟 Call a Play"):
     play = suggest_play()
     if play is not None:
-        st.success(f"**{play['Formation']} – {play['Play Name']}**")
+        col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown("**Formation:**")
+        st.markdown(f"{play['Formation']}")
+    with col2:
+        st.markdown("**Play Name:**")
+        st.markdown(f"{play['Play Name']}")
+
         st.markdown(f"**Type**: {play['Play Type Category']} ({play['Play Type']})")
         st.markdown(f"**Depth**: {play['Play Depth']}")
         st.markdown(f"**Primary Read**: {play['Primary Read']}")
