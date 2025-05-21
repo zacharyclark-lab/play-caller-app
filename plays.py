@@ -84,7 +84,8 @@ st.title("🏈 Play Caller Assistant")
 # Down selector uses the staged value, only updated after success/fail
 col1, col2 = st.columns(2)
 with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down", index=["1st", "2nd", "3rd"].index(st.session_state.next_down))
+    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], index=["1st", "2nd", "3rd"].index(st.session_state.next_down))
+    st.session_state.down = down
 with col2:
     distance = st.selectbox("Select Distance", ["short", "medium", "long"], key="distance")
 
