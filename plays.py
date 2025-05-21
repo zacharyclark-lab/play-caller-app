@@ -26,6 +26,8 @@ if "current_play" not in st.session_state:
     st.session_state.current_play = None
 if "next_down" not in st.session_state:
     st.session_state.next_down = "1st"
+if "submitted_result" not in st.session_state:
+    st.session_state.submitted_result = False
 
 # --- Load and prepare data ---
 @st.cache_data
@@ -79,6 +81,7 @@ st.markdown("""
 
 st.title("🏈 Play Caller Assistant")
 
+# Down selector uses the staged value, only updated after success/fail
 col1, col2 = st.columns(2)
 with col1:
     down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down", index=["1st", "2nd", "3rd"].index(st.session_state.next_down))
@@ -154,15 +157,19 @@ def log_play_result(play_name, down, distance, coverage, success):
         sheet.append_row(row)
         st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
-        # Stage next down
-        if down == "1st":
-            st.session_state.next_down = "2nd"
-        elif down == "2nd":
-            st.session_state.next_down = "3rd"
-        else:
-            st.session_state.next_down = "1st"
+        st.session_state.submitted_result = True
     except Exception as e:
         st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
+
+# Update next down if last play was marked
+if st.session_state.submitted_result:
+    st.session_state.submitted_result = False
+    if st.session_state.down == "1st":
+        st.session_state.next_down = "2nd"
+    elif st.session_state.down == "2nd":
+        st.session_state.next_down = "3rd"
+    else:
+        st.session_state.next_down = "1st"
 
 if st.button("🟢Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
