@@ -153,10 +153,9 @@ def log_play_result(play_name, down, distance, coverage, success):
     try:
         sheet.append_row(row)
         # Reset current play
-        st.session_state.current_play = None        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.", icon="👏")
         st.session_state.current_play = None
-        # Reset current play
-        st.session_state.current_play = None
+        
 
 
 
