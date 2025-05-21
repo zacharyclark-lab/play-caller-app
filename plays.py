@@ -112,7 +112,7 @@ coverage_label = (
     "Balanced"
 )
 
-st.caption(f"Tendency: {coverage_label}")
+
 
 # --- Play selection logic ---
 def suggest_play():
