@@ -42,7 +42,7 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
     lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
 )
 
-# UI layout and styling
+# --- UI layout and styling ---
 st.markdown("""
     <style>
     .slider-labels {
@@ -90,36 +90,8 @@ coverage_label = (
 )
 
 st.caption(f"Tendency: {coverage_label}")
-if "current_play" not in st.session_state:
-    st.session_state.current_play = None
 
-if st.button("📟 Call a Play"):
-    st.session_state.current_play = suggest_play()
-
-play = st.session_state.current_play
-if play is not None:
-    st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
-    st.markdown(f"**Formation**: {play['Formation']}")
-    st.markdown(f"**Play Type**: {play['Play Type']}")
-    st.markdown(f"**Depth**: {play['Play Depth']}")
-    st.markdown(f"**Primary Read**: {play['Primary Read']}")
-    st.markdown(f"**Progression**: {play['Progression']}")
-    st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
-    st.markdown(f"**Notes**: {play['Notes']}")
-    st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Mark as Successful"):
-            log_play_result(play["Play Name"], down, distance, coverage, True)
-            st.success("✅ Marked as successful and logged.")
-    with col2:
-        if st.button("❌ Mark as Unsuccessful"):
-            log_play_result(play["Play Name"], down, distance, coverage, False)
-            st.info("❌ Marked as unsuccessful and logged.")
-
-
-# Play selection logic
+# --- Play selection logic ---
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)].copy()
 
@@ -158,33 +130,36 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# Play result display
-if call_button:
-    play = suggest_play()
-    if play is not None:
-        st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
-        st.markdown(f"**Formation**: {play['Formation']}")
-        st.markdown(f"**Play Type**: {play['Play Type']}")        
-        st.markdown(f"**Depth**: {play['Play Depth']}")
-        st.markdown(f"**Primary Read**: {play['Primary Read']}")
-        st.markdown(f"**Progression**: {play['Progression']}")
-        st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
-        st.markdown(f"**Notes**: {play['Notes']}")
-        st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
+# --- Session state to preserve play across reruns ---
+if "current_play" not in st.session_state:
+    st.session_state.current_play = None
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✅ Mark as Successful"):
-                log_play_result(play["Play Name"], down, distance, coverage, True)
-                st.success("Play marked as successful!")
-        with col2:
-            if st.button("❌ Mark as Unsuccessful"):
-                log_play_result(play["Play Name"], down, distance, coverage, False)
-                st.info("Play marked as unsuccessful.")
-    else:
-        st.warning("No suitable play found. Try changing filters.")
+if st.button("📟 Call a Play"):
+    st.session_state.current_play = suggest_play()
 
-# Footer image
+play = st.session_state.current_play
+if play is not None:
+    st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
+    st.markdown(f"**Formation**: {play['Formation']}")
+    st.markdown(f"**Play Type**: {play['Play Type']}")
+    st.markdown(f"**Depth**: {play['Play Depth']}")
+    st.markdown(f"**Primary Read**: {play['Primary Read']}")
+    st.markdown(f"**Progression**: {play['Progression']}")
+    st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
+    st.markdown(f"**Notes**: {play['Notes']}")
+    st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Mark as Successful"):
+            log_play_result(play["Play Name"], down, distance, coverage, True)
+            st.success("✅ Marked as successful and logged.")
+    with col2:
+        if st.button("❌ Mark as Unsuccessful"):
+            log_play_result(play["Play Name"], down, distance, coverage, False)
+            st.info("❌ Marked as unsuccessful and logged.")
+
+# --- Footer ---
 st.markdown("""
     <div class="bg-footer">
         <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
