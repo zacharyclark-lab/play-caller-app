@@ -10,7 +10,7 @@ def load_data():
 
 df = load_data()
 
-# Page layout and background style
+# Global styles
 st.markdown(
     '''
     <style>
@@ -33,6 +33,7 @@ st.markdown(
         max-width: 700px;
         width: 100%;
         text-align: center;
+        margin: auto;
     }
 
     .slider-labels {
@@ -54,9 +55,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# UI Section
+# UI section
 with st.container():
     st.markdown('<div class="play-box">', unsafe_allow_html=True)
+
     st.title("🏈 Play Caller Assistant")
 
     col1, col2 = st.columns(2)
@@ -89,13 +91,13 @@ with st.container():
     )
     st.caption(f"Tendency: {coverage_label}")
     call_button = st.button("📟 Call a Play")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Logic
+# Play suggestion logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
 
-    # Clean up play type categories
     rpo_keywords = ["rpo", "screen"]
     df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
         lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
@@ -104,7 +106,6 @@ def suggest_play():
         lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
     )
 
-    # Weights based on down/distance
     if down == "1st":
         weights = {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3}
     elif down == "2nd" and distance == "long":
@@ -137,7 +138,7 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# Display play call if button pressed
+# Result display
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -176,7 +177,7 @@ if call_button:
 st.markdown(
     '''
     <div class="bg-footer">
-        <img src="https://raw.githubusercontent.com/yourusername/yourrepo/main/football.png" width="120">
+        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="120">
     </div>
     ''',
     unsafe_allow_html=True
