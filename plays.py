@@ -210,7 +210,7 @@ def load_favorites():
 def add_favorite(play_id):
     try:
         fav_sheet.append_row([play_id])
-        st.toast("\ud83c\udf1f Added to favorites!")
+        st.toast("🌟 Added to favorites!")
     except Exception as e:
         st.error(f"Could not add favorite: {e}")
 
@@ -221,12 +221,12 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         results_sheet.append_row(row)
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful' }.", icon="\ud83d\udc4f")
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful' }.", icon="👏")
         st.session_state.current_play = None
     except Exception as e:
-        st.error(f"\u274c Failed to write to sheet: {e}", icon="\u274c")
+        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
-if st.button("\ud83d\udfe2Call a Play", key="call_play"):
+if st.button("🟢 Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
 
 play = st.session_state.current_play
@@ -245,10 +245,10 @@ if play is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("\u2705 Successful", key="success_btn", help="Mark this play as successful"):
+        if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
-        if st.button("\u274c Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
+        if st.button("❌ Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
 
     st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
@@ -256,10 +256,10 @@ if play is not None:
     st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
 
     if play["Play ID"] not in favorites:
-        if st.button("\ud83c\udf1f Add to Favorites"):
+        if st.button("🌟 Add to Favorites"):
             add_favorite(play["Play ID"])
     else:
-        st.info("\u2b50 Favorited play (ID match)")
+        st.info("⭐ Favorited play (ID match)")
 
 st.markdown("""
     <div class="bg-footer">
