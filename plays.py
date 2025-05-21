@@ -16,7 +16,8 @@ def connect_to_gsheet():
         st.secrets["gcp_service_account"], scope
     )
     client = gspread.authorize(creds)
-    return client.open("PlayCaller Logs").worksheet("results")
+    sheet = client.open("PlayCaller Logs").worksheet("results")
+    return sheet
 
 sheet = connect_to_gsheet()
 
@@ -25,7 +26,7 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     sheet.append_row(row)
 
-# --- Load and Prepare Data ---
+# Load and prepare data
 @st.cache_data
 def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
@@ -37,7 +38,7 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
     lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
 )
 
-# --- UI Styling ---
+# UI layout and styling
 st.markdown("""
     <style>
     .slider-labels {
@@ -56,7 +57,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- UI Inputs ---
 st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
@@ -88,7 +88,7 @@ coverage_label = (
 st.caption(f"Tendency: {coverage_label}")
 call_button = st.button("📟 Call a Play")
 
-# --- Suggest Play Logic ---
+# Play selection logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)].copy()
 
@@ -127,13 +127,13 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# --- Display Play ---
+# Play result display
 if call_button:
     play = suggest_play()
     if play is not None:
         st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
         st.markdown(f"**Formation**: {play['Formation']}")
-        st.markdown(f"**Play Type**: {play['Play Type']}")
+        st.markdown(f"**Play Type**: {play['Play Type']}")        
         st.markdown(f"**Depth**: {play['Play Depth']}")
         st.markdown(f"**Primary Read**: {play['Primary Read']}")
         st.markdown(f"**Progression**: {play['Progression']}")
@@ -153,7 +153,7 @@ if call_button:
     else:
         st.warning("No suitable play found. Try changing filters.")
 
-# --- Footer Image ---
+# Footer image
 st.markdown("""
     <div class="bg-footer">
         <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
