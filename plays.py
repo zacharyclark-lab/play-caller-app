@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -20,7 +21,7 @@ with col2:
 
 coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage_slider")
 
-# Define coverage label BEFORE using it
+# Define label based on slider
 coverage_label = (
     "Strictly Man" if coverage == 0 else
     "Strictly Zone" if coverage == 1 else
@@ -29,9 +30,9 @@ coverage_label = (
     "Balanced"
 )
 
-# Display improved custom labels under slider
+# Visual guide under slider
 st.markdown(
-    """
+    '''
     <style>
     .slider-labels {
         display: flex;
@@ -50,18 +51,17 @@ st.markdown(
         <span>Mainly Zone</span>
         <span>Strictly Zone</span>
     </div>
-    """,
+    ''',
     unsafe_allow_html=True
 )
 
-# Feedback to user
 st.caption(f"Tendency: {coverage_label}")
 
 # Suggestion logic
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)]
 
-    # Categorize RPOs separately if labeled as "rpo" or "screen" in type (if not, adapt to "dropback")
+    # Categorize RPOs separately if labeled as "rpo" or "screen"
     rpo_keywords = ["rpo", "screen"]
     df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
         lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
@@ -70,7 +70,7 @@ def suggest_play():
         lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
     )
 
-    # Determine weights based on situation
+    # Determine weights
     if down == "1st":
         weights = {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3}
     elif down == "2nd" and distance == "long":
@@ -80,7 +80,6 @@ def suggest_play():
     else:
         weights = {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2}
 
-    # Sample one category based on weights
     available_categories = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"] == cat].empty]
     if not available_categories:
         return None
@@ -91,7 +90,6 @@ def suggest_play():
     )[0]
 
     pool = subset[subset["Play Type Category Cleaned"] == category].copy()
-
     if pool.empty:
         return None
 
@@ -104,24 +102,30 @@ def suggest_play():
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
+# Button and display
 if st.button("📟 Call a Play"):
     play = suggest_play()
     if play is not None:
         st.markdown(
-            f"""
-            <div style='
+            f'''
+            <div style="
                 border-left: 5px solid #28a745;
                 background-color: #d4edda;
-                padding: 10px 15px;
-                border-radius: 5px;
+                padding: 12px 15px;
+                border-radius: 6px;
                 margin-bottom: 10px;
-            '>
-                <div style='display: flex; justify-content: space-between; font-size: 1rem;'>
-                    <div><strong>Formation:</strong><br>{play['Formation']}</div>
-                    <div><strong>Play Name:</strong><br>{play['Play Name']}</div>
+                font-size: 0.95em;
+            ">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
+                    <div style="min-width: 120px; flex: 1;">
+                        <strong>Formation:</strong><br>{play['Formation']}
+                    </div>
+                    <div style="min-width: 120px; flex: 1;">
+                        <strong>Play Name:</strong><br>{play['Play Name']}
+                    </div>
                 </div>
             </div>
-            """,
+            ''',
             unsafe_allow_html=True
         )
         st.markdown(f"**Type**: {play['Play Type Category']} ({play['Play Type']})")
@@ -132,5 +136,3 @@ if st.button("📟 Call a Play"):
         st.markdown(f"**Notes**: {play['Notes']}")
     else:
         st.warning("No suitable play found. Try changing filters.")
-
-
