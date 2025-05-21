@@ -5,8 +5,7 @@ import random
 # Load the play database
 @st.cache_data
 def load_data():
-    return pd.read_excel("C:\\Users\\Ger\\Downloads\\play_database_cleaned_download.xlsx")
-
+    return pd.read_excel("play_database_cleaned_download.xlsx")
 df = load_data()
 
 st.title("🧠 Play Caller Assistant")
