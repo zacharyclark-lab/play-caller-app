@@ -90,15 +90,6 @@ coverage_label = (
 )
 
 st.caption(f"Tendency: {coverage_label}")
-# Safe init
-if "current_play" not in st.session_state:
-    st.session_state.current_play = None
-
-# UI: Generate play
-if st.button("📟 Call a Play"):
-    st.session_state.current_play = suggest_play()
-
-play = st.session_state.current_play
 
 # --- Play selection logic ---
 def suggest_play():
@@ -143,7 +134,7 @@ def suggest_play():
 if "current_play" not in st.session_state:
     st.session_state.current_play = None
 
-if st.button("📟 Call a Play"):
+if st.button("📿 Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
 
 play = st.session_state.current_play
@@ -160,11 +151,11 @@ if play is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✅ Mark as Successful"):
+        if st.button("✅ Mark as Successful", key="success_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
             st.success("✅ Marked as successful and logged.")
     with col2:
-        if st.button("❌ Mark as Unsuccessful"):
+        if st.button("❌ Mark as Unsuccessful", key="fail_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
             st.info("❌ Marked as unsuccessful and logged.")
 
