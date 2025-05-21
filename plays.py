@@ -119,7 +119,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("\ud83c\udfc8 Play Caller Assistant")
+st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns([1, 1], gap="small")
 with col1:
