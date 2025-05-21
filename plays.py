@@ -45,12 +45,14 @@ st.markdown("""
     <style>
     .button-row {
         display: flex;
-        justify-content: space-between;
-        gap: 1rem;
+        flex-direction: row;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
         margin-bottom: 1rem;
     }
     .button-row button {
-        flex: 1;
+        flex: 1 1 45%;
         font-size: 0.9rem !important;
     }
     html, body, .main {
