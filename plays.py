@@ -24,10 +24,7 @@ sheet = connect_to_gsheet()
 # --- Session state defaults ---
 if "current_play" not in st.session_state:
     st.session_state.current_play = None
-if "next_down" not in st.session_state:
-    st.session_state.next_down = "1st"
-if "submitted_result" not in st.session_state:
-    st.session_state.submitted_result = False
+
 
 # --- Load and prepare data ---
 @st.cache_data
@@ -84,8 +81,7 @@ st.title("🏈 Play Caller Assistant")
 # Down selector uses the staged value, only updated after success/fail
 col1, col2 = st.columns(2)
 with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], index=["1st", "2nd", "3rd"].index(st.session_state.next_down))
-    st.session_state.down = down
+    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
 with col2:
     distance = st.selectbox("Select Distance", ["short", "medium", "long"], key="distance")
 
@@ -156,8 +152,7 @@ def log_play_result(play_name, down, distance, coverage, success):
     row = [timestamp, play_name, down, distance, coverage, success]
     try:
         sheet.append_row(row)
-        # Stage the next down BEFORE UI is refreshed
-        if down == "1st":
+                if down == "1st":
             st.session_state.next_down = "2nd"
         elif down == "2nd":
             st.session_state.next_down = "3rd"
