@@ -1,21 +1,43 @@
 import streamlit as st
 import pandas as pd
 import random
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
-# Load data
+# --- Connect to Google Sheet ---
+@st.cache_resource
+def connect_to_gsheet():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        st.secrets["gcp_service_account"], scope
+    )
+    client = gspread.authorize(creds)
+    return client.open("PlayCaller Logs").worksheet("results")
+
+sheet = connect_to_gsheet()
+
+def log_play_result(play_name, down, distance, coverage, success):
+    timestamp = datetime.now().isoformat()
+    row = [timestamp, play_name, down, distance, coverage, success]
+    sheet.append_row(row)
+
+# --- Load and Prepare Data ---
 @st.cache_data
 def load_data():
     return pd.read_excel("play_database_cleaned_download.xlsx")
 
 df = load_data()
 
-# Pre-clean category for reuse
 rpo_keywords = ["rpo", "screen"]
 df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
     lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
 )
 
-# Optional styling for slider labels and footer
+# --- UI Styling ---
 st.markdown("""
     <style>
     .slider-labels {
@@ -34,7 +56,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# UI
+# --- UI Inputs ---
 st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
@@ -66,7 +88,7 @@ coverage_label = (
 st.caption(f"Tendency: {coverage_label}")
 call_button = st.button("📟 Call a Play")
 
-# Play suggestion logic
+# --- Suggest Play Logic ---
 def suggest_play():
     subset = df[df["Play Depth"].str.contains(distance, case=False, na=False)].copy()
 
@@ -99,13 +121,13 @@ def suggest_play():
             zone = row["Effective vs Zone"] if pd.notnull(row["Effective vs Zone"]) else 0.5
             return (1 - coverage) * man + coverage * zone
         else:
-            return 0.5  # Neutral score for RPO and run/option
+            return 0.5
 
     pool["Score"] = pool.apply(score, axis=1)
     top = pool.sort_values("Score", ascending=False).head(10)
     return top.sample(1).iloc[0] if not top.empty else None
 
-# Handle button click
+# --- Display Play ---
 if call_button:
     play = suggest_play()
     if play is not None:
@@ -118,10 +140,20 @@ if call_button:
         st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
         st.markdown(f"**Notes**: {play['Notes']}")
         st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Mark as Successful"):
+                log_play_result(play["Play Name"], down, distance, coverage, True)
+                st.success("Play marked as successful!")
+        with col2:
+            if st.button("❌ Mark as Unsuccessful"):
+                log_play_result(play["Play Name"], down, distance, coverage, False)
+                st.info("Play marked as unsuccessful.")
     else:
         st.warning("No suitable play found. Try changing filters.")
 
-# Footer image
+# --- Footer Image ---
 st.markdown("""
     <div class="bg-footer">
         <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
