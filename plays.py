@@ -90,7 +90,34 @@ coverage_label = (
 )
 
 st.caption(f"Tendency: {coverage_label}")
-call_button = st.button("📟 Call a Play")
+if "current_play" not in st.session_state:
+    st.session_state.current_play = None
+
+if st.button("📟 Call a Play"):
+    st.session_state.current_play = suggest_play()
+
+play = st.session_state.current_play
+if play is not None:
+    st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
+    st.markdown(f"**Formation**: {play['Formation']}")
+    st.markdown(f"**Play Type**: {play['Play Type']}")
+    st.markdown(f"**Depth**: {play['Play Depth']}")
+    st.markdown(f"**Primary Read**: {play['Primary Read']}")
+    st.markdown(f"**Progression**: {play['Progression']}")
+    st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
+    st.markdown(f"**Notes**: {play['Notes']}")
+    st.markdown(f"**Match Score**: {round(play['Score'], 2)}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Mark as Successful"):
+            log_play_result(play["Play Name"], down, distance, coverage, True)
+            st.success("✅ Marked as successful and logged.")
+    with col2:
+        if st.button("❌ Mark as Unsuccessful"):
+            log_play_result(play["Play Name"], down, distance, coverage, False)
+            st.info("❌ Marked as unsuccessful and logged.")
+
 
 # Play selection logic
 def suggest_play():
