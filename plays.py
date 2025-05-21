@@ -171,10 +171,7 @@ def log_play_result(play_name, down, distance, coverage, success):
     except Exception as e:
         st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
 
-    elif st.session_state.down == "2nd":
-        st.session_state.next_down = "3rd"
-    else:
-        st.session_state.next_down = "1st"
+
 
 if st.button("🟢Call a Play", key="call_play"):
     st.session_state.current_play = suggest_play()
