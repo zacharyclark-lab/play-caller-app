@@ -15,20 +15,9 @@ df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
     lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
 )
 
-# Page styling
+# Optional styling for slider labels and footer
 st.markdown("""
     <style>
-    .main {
-        background: linear-gradient(to bottom, #f5f7fa 0%, #c3d8dc 100%) !important;
-    }
-    .block-container {
-        background-color: white;
-        padding: 3rem 2rem 4rem 2rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-        max-width: 700px;
-        margin: 3rem auto;
-    }
     .slider-labels {
         display: flex;
         justify-content: space-between;
@@ -45,7 +34,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# UI Content
+# UI
 st.title("🏈 Play Caller Assistant")
 
 col1, col2 = st.columns(2)
@@ -117,30 +106,9 @@ def suggest_play():
 if call_button:
     play = suggest_play()
     if play is not None:
-        st.markdown(
-            f'''
-            <div style="
-                border-left: 5px solid #28a745;
-                background-color: #d4edda;
-                padding: 12px 15px;
-                border-radius: 6px;
-                margin: 2rem auto 1rem auto;
-                font-size: 0.95em;
-                max-width: 700px;
-            ">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
-                    <div style="min-width: 120px; flex: 1;">
-                        <strong>Formation:</strong><br>{play['Formation']}
-                    </div>
-                    <div style="min-width: 120px; flex: 1;">
-                        <strong>Play Name:</strong><br>{play['Play Name']}
-                    </div>
-                </div>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-        st.markdown(f"**Type**: {play['Play Type Category']} ({play['Play Type']})")
+        st.subheader(f"📋 {play['Play Name']} ({play['Play Type Category']})")
+        st.markdown(f"**Formation**: {play['Formation']}")
+        st.markdown(f"**Play Type**: {play['Play Type']}")
         st.markdown(f"**Depth**: {play['Play Depth']}")
         st.markdown(f"**Primary Read**: {play['Primary Read']}")
         st.markdown(f"**Progression**: {play['Progression']}")
