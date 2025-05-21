@@ -30,7 +30,8 @@ if "current_play" not in st.session_state:
 # --- Load and prepare data ---
 @st.cache_data
 def load_data():
-    return pd.read_excel("play_database_cleaned_download.xlsx")
+    df = pd.read_excel("play_database_cleaned_download.xlsx")  # Assign a unique ID based on row index
+    return df
 
 df = load_data()
 
@@ -156,14 +157,14 @@ def suggest_play():
 # --- Favorite Play Management ---
 def load_favorites():
     try:
-        favs = fav_sheet.col_values(1)
-        return set(favs)
+        fav_ids = fav_sheet.col_values(1)
+        return set(fav_ids)
     except:
         return set()
 
-def add_favorite(play_name):
+def add_favorite(play_id):
     try:
-        fav_sheet.append_row([play_name])
+        fav_sheet.append_row([play_id])
         st.toast("🌟 Added to favorites!")
     except Exception as e:
         st.error(f"Could not add favorite: {e}")
@@ -215,11 +216,11 @@ if play is not None:
     st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
     st.markdown(f"**Match Score**: {round(play['Score'], 2)}", unsafe_allow_html=True)
 
-    if play["Play Name"] not in favorites:
+    if play["Play ID"] not in favorites:
         if st.button("🌟 Add to Favorites"):
-            add_favorite(play["Play Name"])
+            add_favorite(play["Play ID"])
     else:
-        st.info("🌟 This play is in your favorites.")
+        st.info("⭐ Favorited play (ID match)")
 
 # --- Footer ---
 st.markdown("""
