@@ -90,6 +90,15 @@ coverage_label = (
 )
 
 st.caption(f"Tendency: {coverage_label}")
+# Safe init
+if "current_play" not in st.session_state:
+    st.session_state.current_play = None
+
+# UI: Generate play
+if st.button("📟 Call a Play"):
+    st.session_state.current_play = suggest_play()
+
+play = st.session_state.current_play
 
 # --- Play selection logic ---
 def suggest_play():
