@@ -107,8 +107,30 @@ st.markdown("""
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-# Tight, horizontal control row
-st.markdown("<div class='section' style='padding:0.5rem;margin-bottom:0.5rem;'>", unsafe_allow_html=True)
+# Centered controls container
+st.markdown("<div class='section' style='max-width:600px;margin:0 auto;padding:0.75rem;'>", unsafe_allow_html=True)
+# Row 1: Down and Distance buttons side by side in one row
+buttons_row = st.columns(6)
+# Downs
+for idx, d in enumerate(["1st","2nd","3rd"]):
+    if buttons_row[idx].button(d, key=f"down_btn_{d}"):
+        st.session_state.selected_down = d
+# Distances
+for idx, d in enumerate(["short","medium","long"]):
+    if buttons_row[idx+3].button(d, key=f"dist_btn_{d}"):
+        st.session_state.selected_distance = d
+# Captions below buttons
+st.markdown(f"<div style='text-align:center; margin-top:0.25rem;'>Down: <strong>{st.session_state.selected_down}</strong> | Dist: <strong>{st.session_state.selected_distance}</strong></div>", unsafe_allow_html=True)
+# Divider
+st.markdown("<hr style='margin:0.5rem 0'>", unsafe_allow_html=True)
+# Row 2: Coverage slider centered
+slider_col = st.columns([1,4,1])[1]
+with slider_col:
+    coverage = st.slider("Coverage", 0.0, 1.0, st.session_state.get('coverage',0.5), 0.01, key="coverage")
+st.markdown(f"<div style='text-align:center; margin-bottom:0.25rem;'>Cov: <strong>{coverage:.2f}</strong></div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Play Suggestion Logic ---", unsafe_allow_html=True)
 # First row: Down buttons and Distance buttons side-by-side
 row1 = st.columns([1,1,2])
 # Downs in first segment
