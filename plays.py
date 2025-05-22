@@ -91,8 +91,14 @@ with col2:
              index=["short","medium","long"].index(st.session_state.selected_distance), key="selected_distance")
 with col3:
     # Coverage slider between Man (0) and Zone (1)
-    coverage_val = st.slider("Coverage (Man vs Zone)", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
-    st.session_state.coverage = coverage_val
+    st.slider(
+        "Coverage (Man vs Zone)",
+        min_value=0.0,
+        max_value=1.0,
+        value=st.session_state.coverage,
+        step=0.05,
+        key="coverage"
+    )
     # Custom labels beneath slider
     st.markdown(
         "<div style='display:flex; justify-content: space-between; font-size:0.9rem;'>"
@@ -137,8 +143,7 @@ play = st.session_state.current_play
 if play is not None:
     st.markdown(
         f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
-        f"<strong>Play:</strong> {play['Play Name']}</div>",
-        unsafe_allow_html=True
+        f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True
     )
     col1, col2 = st.columns(2)
     with col1:
