@@ -76,30 +76,39 @@ st.markdown("""
         text-align: center;
         margin-top: 1rem;
     }
+    .button-row-flex {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    .button-row-flex button {
+        font-size: 1.1rem !important;
+        padding: 0.75rem 1.5rem !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🏈 Play Caller Assistant")
 
-# --- UI Controls: Buttons instead of dropdowns ---
-st.markdown("### Select Down")
-down = st.radio("", ["1st", "2nd", "3rd"], horizontal=True, key="down_radio")
-
-st.markdown("### Select Distance")
-distance = st.radio("", ["short", "medium", "long"], horizontal=True, key="distance_radio")
-
-st.markdown("### Defensive Coverage Tendency")
-coverage = st.slider("", 0.0, 1.0, 0.5, 0.01, key="coverage")
-
-st.markdown("""
-    <div class="slider-labels">
-        <span>Strictly Man</span>
-        <span>Mainly Man</span>
-        <span>Balanced</span>
-        <span>Mainly Zone</span>
-        <span>Strictly Zone</span>
-    </div>
-""", unsafe_allow_html=True)
+# --- UI Controls ---
+st.markdown("### Game Situation")
+col1, col2, col3 = st.columns(3)
+with col1:
+    down = st.radio("Down", ["1st", "2nd", "3rd"], horizontal=False, key="down_radio")
+with col2:
+    distance = st.radio("Distance", ["short", "medium", "long"], horizontal=False, key="distance_radio")
+with col3:
+    coverage = st.slider("Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
+    st.markdown("""
+        <div class="slider-labels">
+            <span>Strictly Man</span><br>
+            <span>Mainly Man</span><br>
+            <span>Balanced</span><br>
+            <span>Mainly Zone</span><br>
+            <span>Strictly Zone</span>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
 def filter_by_depth(df, down, distance):
@@ -181,13 +190,15 @@ if play is not None:
         </div>
     </div>""", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    st.markdown("""<div class='button-row-flex'>""", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("✅ Successful", key="success_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, True)
     with col2:
         if st.button("❌ Unsuccessful", key="fail_btn"):
             log_play_result(play["Play Name"], down, distance, coverage, False)
+    st.markdown("""</div>""", unsafe_allow_html=True)
 
     with st.expander("More Details"):
         st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
