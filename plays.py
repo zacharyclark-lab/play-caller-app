@@ -107,31 +107,31 @@ st.markdown("""
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-# Center and constrain to 600px
+# Centered controls container
 st.markdown("<div class='section' style='max-width:600px; margin:0 auto; padding:1rem;'>", unsafe_allow_html=True)
-# Layout: Downs, Distance, Coverage in one row
-controls = st.columns([2,2,3])
-# Downs
-with controls[0]:
+# Layout: Down, Distance, and Coverage in one row
+down_col, dist_col, cov_col = st.columns([2,2,3])
+# Downs group
+with down_col:
     st.markdown("### Down")
-    downs = st.columns(3)
+    btns = st.columns(3)
     for i, d in enumerate(["1st","2nd","3rd"]):
-        if downs[i].button(d, key=f"down_{d}", use_container_width=True):
+        if btns[i].button(d, key=f"down_btn_{d}", use_container_width=True):
             st.session_state.selected_down = d
-    st.caption(f"{st.session_state.selected_down}")
-# Distance
-with controls[1]:
+    st.caption(f"Selected: {st.session_state.selected_down}")
+# Distance group
+with dist_col:
     st.markdown("### Distance")
-    dists = st.columns(3)
+    btns = st.columns(3)
     for i, d in enumerate(["short","medium","long"]):
-        if dists[i].button(d, key=f"dist_{d}", use_container_width=True):
+        if btns[i].button(d, key=f"dist_btn_{d}", use_container_width=True):
             st.session_state.selected_distance = d
-    st.caption(f"{st.session_state.selected_distance}")
-# Coverage
-with controls[2]:
+    st.caption(f"Selected: {st.session_state.selected_distance}")
+# Coverage slider
+with cov_col:
     st.markdown("### Coverage")
-    cov = st.slider("", 0.0, 1.0, st.session_state.get('coverage',0.5), 0.01, key="coverage", use_container_width=True)
-    st.caption(f"{cov:.2f}")
+    coverage = st.slider("", 0.0, 1.0, st.session_state.get('coverage', 0.5), 0.05, key="coverage", use_container_width=True)
+    st.caption(f"Coverage: {coverage:.2f}")
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---", unsafe_allow_html=True)
