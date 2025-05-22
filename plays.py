@@ -7,11 +7,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
 # --- Google Sheets Connection ---
-@st.experimental_singleton(ttl=3600)
+@st.cache_resource
 def connect_to_gsheet():
     """
     Connect to the Google Sheets document using service account credentials.
-    Cached as a singleton for up to 1 hour (3600 seconds).
+    Cached resource to avoid reconnecting unnecessarily.
     Includes error handling to provide user feedback on failure.
     """
     try:
