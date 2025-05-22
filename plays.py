@@ -121,41 +121,24 @@ st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_
 
 # --- Controls Section ---
 st.markdown("<div class='section'>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown("#### Down")
-    st.markdown("<div class='option-buttons'>", unsafe_allow_html=True)
-    for d in ["1st", "2nd", "3rd"]:
-        btn = st.button(d, key=f"down_{d}")
-        if btn:
-            st.session_state.selected_down = d
-        # apply selected class via JS-less hack: rerender with st.markdown
-        if st.session_state.selected_down == d:
-            st.markdown(
-                f"<script>document.getElementsByTagName('button')[document.getElementsByTagName('button').length-1].classList.add('selected');</script>",
-                unsafe_allow_html=True
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"Selected: **{st.session_state.selected_down}**")
+# Use Streamlit columns to lay out buttons horizontally
+col_down = st.columns(3)
+st.markdown("#### Down", unsafe_allow_html=True)
+for idx, d in enumerate(["1st", "2nd", "3rd"]):
+    if col_down[idx].button(d, key=f"down_{d}"):
+        st.session_state.selected_down = d
+st.markdown(f"Selected Down: **{st.session_state.selected_down}**")
 
-with col2:
-    st.markdown("#### Distance")
-    st.markdown("<div class='option-buttons'>", unsafe_allow_html=True)
-    for d in ["short", "medium", "long"]:
-        btn = st.button(d, key=f"dist_{d}")
-        if btn:
-            st.session_state.selected_distance = d
-        if st.session_state.selected_distance == d:
-            st.markdown(
-                f"<script>document.getElementsByTagName('button')[document.getElementsByTagName('button').length-1].classList.add('selected');</script>",
-                unsafe_allow_html=True
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"Selected: **{st.session_state.selected_distance}**")
+col_dist = st.columns(3)
+st.markdown("#### Distance", unsafe_allow_html=True)
+for idx, d in enumerate(["short", "medium", "long"]):
+    if col_dist[idx].button(d, key=f"dist_{d}"):
+        st.session_state.selected_distance = d
+st.markdown(f"Selected Distance: **{st.session_state.selected_distance}**")
 
-with col3:
+col_cov = st.columns([1, 2, 1])
+with col_cov[1]:
     coverage = st.slider("#### Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
-
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
