@@ -113,7 +113,7 @@ for i, d in enumerate(["short","medium","long"]):
         st.session_state.selected_distance = d
 # Coverage slider inline
 st.markdown("<div><strong>Coverage</strong></div>", unsafe_allow_html=True)
-coverage = st.slider("", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage", use_container_width=True)
+coverage = st.slider("", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
 st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Suggest Play Button ---
