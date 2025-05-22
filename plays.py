@@ -30,6 +30,10 @@ if "current_play" not in st.session_state:
     st.session_state.current_play = None
 if "favorites" not in st.session_state:
     st.session_state.favorites = set()
+if "selected_down" not in st.session_state:
+    st.session_state.selected_down = "1st"
+if "selected_distance" not in st.session_state:
+    st.session_state.selected_distance = "short"
 
 # --- Load and prepare data ---
 @st.cache_data
@@ -82,12 +86,7 @@ st.markdown("""
         justify-content: center;
         margin-top: 2rem;
     }
-    .button-row-flex button {
-        font-size: 2.2rem !important;
-        padding: 1.25rem 2.5rem !important;
-        font-weight: 800 !important;
-    }
-    button[kind="primary"] {
+    .button-row-flex button, .select-btn button {
         font-size: 2.2rem !important;
         padding: 1.25rem 2.5rem !important;
         font-weight: 800 !important;
@@ -97,13 +96,23 @@ st.markdown("""
 
 st.title("🏈 Play Caller Assistant")
 
-# --- UI Controls ---
+# --- UI Controls as actual buttons ---
 st.markdown("### Game Situation")
 col1, col2, col3 = st.columns(3)
 with col1:
-    down = st.radio("Down", ["1st", "2nd", "3rd"], horizontal=False, key="down_radio")
+    st.markdown("**Down**")
+    for d in ["1st", "2nd", "3rd"]:
+        if st.button(d, key=f"down_{d}"):
+            st.session_state.selected_down = d
+    st.markdown(f"Selected: **{st.session_state.selected_down}**")
+
 with col2:
-    distance = st.radio("Distance", ["short", "medium", "long"], horizontal=False, key="distance_radio")
+    st.markdown("**Distance**")
+    for d in ["short", "medium", "long"]:
+        if st.button(d, key=f"dist_{d}"):
+            st.session_state.selected_distance = d
+    st.markdown(f"Selected: **{st.session_state.selected_distance}**")
+
 with col3:
     coverage = st.slider("Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
 
@@ -118,6 +127,8 @@ def filter_by_depth(df, down, distance):
     return df
 
 def suggest_play():
+    down = st.session_state.selected_down
+    distance = st.session_state.selected_distance
     subset = filter_by_depth(df, down, distance)
     weights = {
         ("1st", None): {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3},
@@ -191,10 +202,10 @@ if play is not None:
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("✅ Successful", key="success_btn"):
-            log_play_result(play["Play Name"], down, distance, coverage, True)
+            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, coverage, True)
     with col2:
         if st.button("❌ Unsuccessful", key="fail_btn"):
-            log_play_result(play["Play Name"], down, distance, coverage, False)
+            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, coverage, False)
     st.markdown("""</div>""", unsafe_allow_html=True)
 
     with st.expander("More Details"):
