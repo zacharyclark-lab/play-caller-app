@@ -53,7 +53,6 @@ def load_data():
     )
     return df
 
-# Load the data
 df = load_data()
 
 # --- Styling ---
@@ -80,24 +79,27 @@ load_styles()
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-col1, col2 = st.columns(2)
-with col1:
-    st.radio("Down", ["1st", "2nd", "3rd"],
-             index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
-             key="selected_down")
-with col2:
-    st.radio("Distance", ["short", "medium", "long"],
-             index=["short", "medium", "long"].index(st.session_state.selected_distance),
-             key="selected_distance")
+st.markdown("### Select Down & Distance")
+# Render Down choices as a horizontal radio button group
+st.radio(
+    "Down", ["1st", "2nd", "3rd"],
+    index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
+    key="selected_down",
+    horizontal=True
+)
+# Render Distance choices as a horizontal radio button group
+st.radio(
+    "Distance", ["short", "medium", "long"],
+    index=["short", "medium", "long"].index(st.session_state.selected_distance),
+    key="selected_distance",
+    horizontal=True
+)
 
 # --- Suggest Play Logic (Coverage Ignored) ---
 def suggest_play(df, down, distance, coverage=None):
-    # Filter for medium/long depths on 2nd/3rd & long
     subset = df.copy()
     if down in ("2nd", "3rd") and distance == "long":
         subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
-
-    # Define weights per (down, distance)
     weight_table = {
         ("1st", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
         ("1st", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
@@ -111,16 +113,12 @@ def suggest_play(df, down, distance, coverage=None):
     }
     weights = weight_table.get((down, distance),
                                {"dropback": .33, "rpo": .33, "run_option": .34})
-
-    # Only keep categories present
     available = {cat: w for cat, w in weights.items()
                  if not subset[subset["Play Type Category Cleaned"] == cat].empty}
     if not available:
         return None
-
     cats, wts = zip(*available.items())
     chosen_cat = random.choices(cats, weights=wts, k=1)[0]
-
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
@@ -138,7 +136,6 @@ if play is not None:
     st.markdown(
         f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
         f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True)
-
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Successful"):
@@ -151,16 +148,14 @@ if play is not None:
     with col2:
         if st.button("❌ Unsuccessful"):
             results_sheet.append_row([
-                datetime.now().isoformat(), play['Play Name'],
+                datetime.now().isoformat(), play[' Play Name'],
                 st.session_state.selected_down,
                 st.session_state.selected_distance, None, False
             ])
             st.session_state.current_play = None
-
     if st.button("🌟 Add to Favorites"):
         fav_sheet.append_row([play['Play ID']])
         st.session_state.favorites.add(play['Play ID'])
-
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
