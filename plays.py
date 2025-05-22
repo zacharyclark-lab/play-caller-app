@@ -97,20 +97,24 @@ st.markdown("""
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown("**Down**")
-    for d in ["1st", "2nd", "3rd"]:
-        if st.button(d, key=f"down_{d}"):
-            st.session_state.selected_down = d
-with col2:
-    st.markdown("**Distance**")
-    for d in ["short", "medium", "long"]:
-        if st.button(d, key=f"dist_{d}"):
-            st.session_state.selected_distance = d
-with col3:
-    st.markdown("**Coverage**")
-    st.session_state.coverage = st.slider("", 0.0, 1.0, st.session_state.coverage, 0.05)
+# Inline buttons for Down and Distance, along with Coverage slider
+st.markdown("<div class='controls'>", unsafe_allow_html=True)
+# Down buttons inline
+st.markdown("<div><strong>Down</strong></div>", unsafe_allow_html=True)
+down_cols = st.columns(3)
+for i, d in enumerate(["1st","2nd","3rd"]):
+    if down_cols[i].button(d, key=f"down_{d}", use_container_width=True):
+        st.session_state.selected_down = d
+# Distance buttons inline
+st.markdown("<div><strong>Distance</strong></div>", unsafe_allow_html=True)
+dist_cols = st.columns(3)
+for i, d in enumerate(["short","medium","long"]):
+    if dist_cols[i].button(d, key=f"dist_{d}", use_container_width=True):
+        st.session_state.selected_distance = d
+# Coverage slider inline
+st.markdown("<div><strong>Coverage</strong></div>", unsafe_allow_html=True)
+coverage = st.slider("", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage", use_container_width=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Suggest Play Button ---
 if st.button("🟢 Call a Play"):
