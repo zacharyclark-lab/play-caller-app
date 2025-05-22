@@ -169,4 +169,111 @@ with col3:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# (rest of the script remains unchanged)
+# --- Play Suggestion Logic ---
+def filter_by_depth(df, down, distance):
+    if down == "1st":
+        return df
+    if down == "2nd" and distance == "long":
+        return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
+    if down == "3rd" and distance == "long":
+        return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
+    return df
+
+def suggest_play():
+    down = st.session_state.selected_down
+    distance = st.session_state.selected_distance
+    subset = filter_by_depth(df, down, distance)
+    weights = {
+        ("1st", None): {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3},
+        ("2nd", "long"): {"dropback": 0.7, "rpo": 0.3, "run_option": 0.0},
+        ("3rd", "long"): {"dropback": 1.0, "rpo": 0.0, "run_option": 0.0},
+    }.get((down, distance), {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2})
+
+    available = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"] == cat].empty]
+    if not available:
+        return None
+
+    category = random.choices(
+        population=available,
+        weights=[weights[cat] for cat in available],
+        k=1
+    )[0]
+
+    pool = subset[subset["Play Type Category Cleaned"] == category].copy()
+    if pool.empty:
+        return None
+
+    if category == "dropback":
+        man = pool["Effective vs Man"].fillna(0.5)
+        zone = pool["Effective vs Zone"].fillna(0.5)
+        pool["Score"] = (1 - st.session_state.coverage) * man + st.session_state.coverage * zone
+    else:
+        pool["Score"] = 0.5
+
+    top = pool.nlargest(10, "Score")
+    return top.sample(1).iloc[0] if not top.empty else None
+
+# --- Google Sheet Interaction ---
+def load_favorites():
+    try:
+        return set(fav_sheet.col_values(1))
+    except:
+        return set()
+
+def add_favorite(play_id):
+    try:
+        fav_sheet.append_row([play_id])
+        st.session_state.favorites.add(play_id)
+        st.toast("🌟 Added to favorites!")
+    except Exception as e:
+        st.error(f"Could not add favorite: {e}")
+
+def log_play_result(play_name, down, distance, coverage, success):
+    row = [datetime.now().isoformat(), play_name, down, distance, coverage, success]
+    try:
+        results_sheet.append_row(row)
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful' }.", icon="👏")
+        st.session_state.current_play = None
+    except Exception as e:
+        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
+
+# --- Main Interaction ---
+if st.button("🟢 Call a Play", key="call_play"):
+    st.session_state.current_play = suggest_play()
+
+play = st.session_state.current_play
+if play is not None:
+    st.markdown(f"""
+    <div class='section highlight-box'>
+        <div class='highlight-flex'>
+            <div class='highlight-item'><strong>Formation:</strong><br>{play['Formation']}</div>
+            <div class='highlight-item'><strong>Play Name:</strong><br>{play['Play Name']}</div>
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown("""<div class='button-row-flex'>""", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("✅ Successful", key="success_btn"):
+            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage, True)
+    with col2:
+        if st.button("❌ Unsuccessful", key="fail_btn"):
+            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage, False)
+    st.markdown("""</div>""", unsafe_allow_html=True)
+
+    with st.expander("More Details"):
+        st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
+        st.markdown(f"**Progression**: {play['Progression']}")
+        st.markdown(f"**Notes**: {play['Notes']}")
+
+    if play["Play ID"] not in st.session_state.favorites:
+        if st.button("🌟 Add to Favorites"):
+            add_favorite(play["Play ID"])
+    else:
+        st.info("⭐ Favorited play (ID match)")
+
+st.markdown("""
+    <div class=\"bg-footer\">
+        <img src=\"https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png\" width=\"260\">
+    </div>
+""", unsafe_allow_html=True)
