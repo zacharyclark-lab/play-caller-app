@@ -63,6 +63,33 @@ st.markdown("""
     margin-bottom: 1.5rem;
     font-weight: 700;
 }
+/* Style for radio-as-buttons */
+.stRadio>label {
+    display: none;
+}
+.stRadio [role="radiogroup"] {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.stRadio input[type="radio"] {
+    display: none;
+}
+.stRadio input[type="radio"] + label {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.stRadio input[type="radio"]:checked + label {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
 .controls {
     display: flex;
     justify-content: space-between;
@@ -72,16 +99,8 @@ st.markdown("""
 .controls > div {
     flex: 1;
 }
-.controls .buttons {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 0.5rem;
-}
-.stButton > button {
-    flex: 1;
-    margin: 0 0.25rem;
-    font-size: 1.1rem !important;
-    padding: 0.6rem;
+.stSlider>div {
+    padding: 0;
 }
 .play-box {
     border-left: 4px solid #28a745;
@@ -92,29 +111,20 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-# Inline buttons for Down and Distance, along with Coverage slider
-st.markdown("<div class='controls'>", unsafe_allow_html=True)
-# Down buttons inline
-st.markdown("<div><strong>Down</strong></div>", unsafe_allow_html=True)
-down_cols = st.columns(3)
-for i, d in enumerate(["1st","2nd","3rd"]):
-    if down_cols[i].button(d, key=f"down_{d}", use_container_width=True):
-        st.session_state.selected_down = d
-# Distance buttons inline
-st.markdown("<div><strong>Distance</strong></div>", unsafe_allow_html=True)
-dist_cols = st.columns(3)
-for i, d in enumerate(["short","medium","long"]):
-    if dist_cols[i].button(d, key=f"dist_{d}", use_container_width=True):
-        st.session_state.selected_distance = d
-# Coverage slider inline
-st.markdown("<div><strong>Coverage</strong></div>", unsafe_allow_html=True)
-coverage = st.slider("", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
-st.markdown("</div>", unsafe_allow_html=True)
+# Radio groups styled as buttons for Down and Distance, plus slider
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.radio("Down", ["1st","2nd","3rd"], index=["1st","2nd","3rd"].index(st.session_state.selected_down), key="selected_down")
+with col2:
+    st.radio("Distance", ["short","medium","long"], index=["short","medium","long"].index(st.session_state.selected_distance), key="selected_distance")
+with col3:
+    st.slider("Coverage", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
 
 # --- Suggest Play Button ---
 if st.button("🟢 Call a Play"):
