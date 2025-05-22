@@ -107,32 +107,33 @@ st.markdown("""
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-# Centered controls container
-st.markdown("<div class='section' style='max-width:600px; margin:0 auto; padding:0.75rem;'>", unsafe_allow_html=True)
-# Three segments: Downs, Distance, Coverage
-seg_cols = st.columns([1,1,2])
-# Downs buttons
-with seg_cols[0]:
-    st.markdown("#### Down")
-    btns = st.columns(3)
+# Center and constrain to 600px
+st.markdown("<div class='section' style='max-width:600px; margin:0 auto; padding:1rem;'>", unsafe_allow_html=True)
+# Layout: Downs, Distance, Coverage in one row
+controls = st.columns([2,2,3])
+# Downs
+with controls[0]:
+    st.markdown("### Down")
+    downs = st.columns(3)
     for i, d in enumerate(["1st","2nd","3rd"]):
-        if btns[i].button(d, key=f"down_{d}", use_container_width=True):
+        if downs[i].button(d, key=f"down_{d}", use_container_width=True):
             st.session_state.selected_down = d
-    st.caption(f"Selected: {st.session_state.selected_down}")
-# Distance buttons
-with seg_cols[1]:
-    st.markdown("#### Distance")
-    btns = st.columns(3)
+    st.caption(f"{st.session_state.selected_down}")
+# Distance
+with controls[1]:
+    st.markdown("### Distance")
+    dists = st.columns(3)
     for i, d in enumerate(["short","medium","long"]):
-        if btns[i].button(d, key=f"dist_{d}", use_container_width=True):
+        if dists[i].button(d, key=f"dist_{d}", use_container_width=True):
             st.session_state.selected_distance = d
-    st.caption(f"Selected: {st.session_state.selected_distance}")
-# Coverage slider
-with seg_cols[2]:
-    st.markdown("#### Coverage")
-    coverage = st.slider("", 0.0, 1.0, st.session_state.get('coverage', 0.5), 0.01, key="coverage", use_container_width=True)
-    st.caption(f"Coverage: {coverage:.2f}")
+    st.caption(f"{st.session_state.selected_distance}")
+# Coverage
+with controls[2]:
+    st.markdown("### Coverage")
+    cov = st.slider("", 0.0, 1.0, st.session_state.get('coverage',0.5), 0.01, key="coverage", use_container_width=True)
+    st.caption(f"{cov:.2f}")
 st.markdown("</div>", unsafe_allow_html=True)
+
 # --- Play Suggestion Logic ---", unsafe_allow_html=True)
 # First row: Down buttons and Distance buttons side-by-side
 row1 = st.columns([1,1,2])
