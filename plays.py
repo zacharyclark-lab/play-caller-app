@@ -120,26 +120,28 @@ st.markdown("""
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Controls Section ---
-st.markdown("<div class='section'>", unsafe_allow_html=True)
-# Use Streamlit columns to lay out buttons horizontally
-col_down = st.columns(3)
-st.markdown("#### Down", unsafe_allow_html=True)
-for idx, d in enumerate(["1st", "2nd", "3rd"]):
-    if col_down[idx].button(d, key=f"down_{d}"):
-        st.session_state.selected_down = d
-st.markdown(f"Selected Down: **{st.session_state.selected_down}**")
-
-col_dist = st.columns(3)
-st.markdown("#### Distance", unsafe_allow_html=True)
-for idx, d in enumerate(["short", "medium", "long"]):
-    if col_dist[idx].button(d, key=f"dist_{d}"):
-        st.session_state.selected_distance = d
-st.markdown(f"Selected Distance: **{st.session_state.selected_distance}**")
-
-col_cov = st.columns([1, 2, 1])
-with col_cov[1]:
-    coverage = st.slider("#### Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
+# Compact controls: downs, distance, coverage on one line
+st.markdown("<div class='section' style='padding:0.5rem;margin-bottom:0.5rem;'>", unsafe_allow_html=True)
+cols = st.columns([1,1,1,2])
+# Downs
+with cols[0]:
+    for d in ["1st","2nd","3rd"]:
+        if st.button(d, key=f"down_{d}", use_container_width=True):
+            st.session_state.selected_down = d
+    st.caption(f"Down: {st.session_state.selected_down}")
+# Distance
+with cols[1]:
+    for d in ["short","medium","long"]:
+        if st.button(d, key=f"dist_{d}", use_container_width=True):
+            st.session_state.selected_distance = d
+    st.caption(f"Dist: {st.session_state.selected_distance}")
+# Coverage slider
+with cols[2]:
+    coverage = st.slider("",0.0,1.0,st.session_state.get('coverage',0.5),0.1,key="coverage")
+    st.caption(f"Cov: {coverage:.1f}")
 st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Play Suggestion Logic ---, unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
 def filter_by_depth(df, down, distance):
