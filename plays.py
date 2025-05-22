@@ -83,8 +83,14 @@ st.markdown("""
         margin-top: 1rem;
     }
     .button-row-flex button {
-        font-size: 1.1rem !important;
-        padding: 0.75rem 1.5rem !important;
+        font-size: 1.4rem !important;
+        padding: 1rem 2rem !important;
+        font-weight: bold !important;
+    }
+    button[kind="primary"] {
+        font-size: 1.4rem !important;
+        padding: 1rem 2rem !important;
+        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
