@@ -53,22 +53,6 @@ st.markdown("""
         max-width: 100vw !important;
         overflow-x: hidden !important;
     }
-    .button-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        gap: 0.5rem;
-        flex-wrap: nowrap;
-    }
-    .slider-labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85em;
-        color: #6c757d;
-        margin-top: -10px;
-        margin-bottom: 5px;
-        padding: 0 5px;
-    }
     .highlight-box {
         border-left: 5px solid #28a745;
         background-color: #d4edda;
@@ -97,13 +81,15 @@ st.markdown("""
 
 st.title("🏈 Play Caller Assistant")
 
-col1, col2 = st.columns(2)
-with col1:
-    down = st.selectbox("Select Down", ["1st", "2nd", "3rd"], key="down")
-with col2:
-    distance = st.selectbox("Select Distance", ["short", "medium", "long"], key="distance")
+# --- UI Controls: Buttons instead of dropdowns ---
+st.markdown("### Select Down")
+down = st.radio("", ["1st", "2nd", "3rd"], horizontal=True, key="down_radio")
 
-coverage = st.slider("Defensive Coverage Tendency", 0.0, 1.0, 0.5, 0.01, key="coverage")
+st.markdown("### Select Distance")
+distance = st.radio("", ["short", "medium", "long"], horizontal=True, key="distance_radio")
+
+st.markdown("### Defensive Coverage Tendency")
+coverage = st.slider("", 0.0, 1.0, 0.5, 0.01, key="coverage")
 
 st.markdown("""
     <div class="slider-labels">
