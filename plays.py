@@ -49,33 +49,36 @@ df = load_data()
 # --- App Styling ---
 st.markdown("""
     <style>
-    html, body, .main, .block-container {
+    html, body {
         padding: 0;
         margin: 0;
-        max-width: 100vw;
-        overflow-x: hidden;
         background-color: #f5f7fa;
         font-family: 'Segoe UI', sans-serif;
     }
+    .main, .block-container {
+        max-width: 900px !important;
+        margin: 0 auto !important;
+        padding: 1rem 0;
+    }
     .title {
         text-align: center;
-        font-size: 3rem;
-        margin: 2rem 0;
+        font-size: 2.5rem;
+        margin: 1.5rem 0;
         font-weight: bold;
     }
     .section {
-        padding: 1.5rem;
+        padding: 1rem;
         background-color: white;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin: 0.75rem auto;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .highlight-box {
-        border-left: 6px solid #28a745;
+        border-left: 4px solid #28a745;
         background-color: #e6f4ea;
-        padding: 16px;
-        border-radius: 10px;
-        font-size: 1.1rem;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 1rem;
         margin-top: 1rem;
     }
     .highlight-flex {
@@ -86,33 +89,17 @@ st.markdown("""
     .button-row-flex {
         display: flex;
         justify-content: center;
-        gap: 2rem;
-        margin-top: 2rem;
-    }
-    .option-buttons {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
+        gap: 1rem;
+        margin-top: 1rem;
     }
     .stButton > button {
-        font-size: 1.2rem !important;
-        padding: 0.75rem 1.5rem !important;
-        border-radius: 8px !important;
-    }
-    .selected {
-        background-color: #007bff !important;
-        color: white !important;
+        font-size: 1.1rem !important;
+        padding: 0.5rem 1.5rem !important;
+        border-radius: 6px !important;
     }
     @media (max-width: 768px) {
-        .option-buttons {
-            flex-direction: column;
-            align-items: center;
-        }
-        .button-row-flex {
-            flex-direction: column;
-        }
+        .main, .block-container { padding: 0.5rem !important; }
+        .button-row-flex { flex-direction: column; }
     }
     </style>
 """, unsafe_allow_html=True)
