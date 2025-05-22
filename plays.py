@@ -37,7 +37,6 @@ results_sheet = sheet.worksheet("results")
 fav_sheet = sheet.worksheet("favorite_plays")
 
 # --- Session State Defaults ---
-# Initialize defaults concisely using setdefault
 st.session_state.setdefault("current_play", None)
 st.session_state.setdefault("favorites", set())
 st.session_state.setdefault("selected_down", "1st")
@@ -62,15 +61,59 @@ df = load_data()
 # --- Styling ---
 def load_styles(css_path: str = "styles.css"):
     """
-    Load CSS styles from an external file for cleaner maintenance.
-    Place your CSS definitions in styles.css in the same directory.
+    Load CSS styles from an external file, or apply fallback inline CSS.
+    """
+    default_css = """
+    .main .block-container {
+        max-width: 700px;
+        padding: 1rem 1.5rem;
+    }
+    .title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-top: 1rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+    }
+    /* Style for radio-as-buttons */
+    .stRadio>label { display: none; }
+    .stRadio [role="radiogroup"] {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+    .stRadio input[type="radio"] { display: none; }
+    .stRadio input[type="radio"] + label {
+        flex: 1;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .stRadio input[type="radio"]:checked + label {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .controls { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; }
+    .controls > div { flex: 1; }
+    .stSlider>div { padding: 0; }
+    .play-box {
+        border-left: 4px solid #28a745;
+        background-color: #e6f4ea;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
     """
     try:
         with open(css_path) as f:
             css = f.read()
         st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning(f"CSS file '{css_path}' not found. Using default Streamlit theme.")
+        # Apply inline fallback CSS if external file not found
+        st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
 
 load_styles()
 
@@ -81,46 +124,32 @@ st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_
 col1, col2, col3 = st.columns(3)
 with col1:
     st.radio("Down", ["1st","2nd","3rd"],
-             index=["1st","2nd","3rd"].index(st.session_state.selected_down),
-             key="selected_down")
+             index=["1st","2nd","3rd"].index(st.session_state.selected_down), key="selected_down")
 with col2:
     st.radio("Distance", ["short","medium","long"],
-             index=["short","medium","long"].index(st.session_state.selected_distance),
-             key="selected_distance")
+             index=["short","medium","long"].index(st.session_state.selected_distance), key="selected_distance")
 with col3:
-    st.slider("Coverage", 0.0, 1.0, st.session_state.coverage,
-              0.05, key="coverage")
+    st.slider("Coverage", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
 
 # --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage):
     subset = df.copy()
-    # Filter for deeper down-and-distance
     if down in ["2nd", "3rd"] and distance == "long":
-        subset = subset[
-            subset["Play Depth"].str.contains("medium|long", case=False, na=False)
-        ]
-    # Adjusted weights to favor runs and RPOs more
+        subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
     weights = {
         ("1st", None):     {"dropback": 0.3, "rpo": 0.35, "run_option": 0.35},
         ("2nd","long"):  {"dropback": 0.6, "rpo": 0.3,  "run_option": 0.1},
         ("3rd","long"):  {"dropback": 1.0, "rpo": 0.0,  "run_option": 0.0}
-    }.get(
-        (down, distance), {"dropback": 0.4, "rpo": 0.35, "run_option": 0.25}
-    )
-    # Determine available categories
-    candidates = [cat for cat in weights if not subset[
-        subset["Play Type Category Cleaned"] == cat
-    ].empty]
+    }.get((down, distance), {"dropback": 0.4, "rpo": 0.35, "run_option": 0.25})
+    candidates = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"]==cat].empty]
     if not candidates:
         return None
-    # Randomly select category according to adjusted weights
     chosen_cat = random.choices(candidates, weights=[weights[c] for c in candidates], k=1)[0]
-    pool = subset[subset["Play Type Category Cleaned"] == chosen_cat].copy()
-    # Score dropback plays by coverage and effectiveness
+    pool = subset[subset["Play Type Category Cleaned"]==chosen_cat].copy()
     if chosen_cat == "dropback":
         man = pool["Effective vs Man"].fillna(0.5)
         zone = pool["Effective vs Zone"].fillna(0.5)
-        pool["Score"] = (1 - coverage) * man + coverage * zone
+        pool["Score"] = (1-coverage)*man + coverage*zone
     else:
         pool["Score"] = 0.5
     top = pool.nlargest(10, "Score")
@@ -129,27 +158,22 @@ def suggest_play(df, down, distance, coverage):
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
     st.session_state.current_play = suggest_play(
-        df,
-        st.session_state.selected_down,
-        st.session_state.selected_distance,
-        st.session_state.coverage
+        df, st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage
     )
 
 # --- Display Selected Play ---
 play = st.session_state.current_play
 if play is not None:
     st.markdown(
-        f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
-        f"<strong>Play:</strong> {play['Play Name']}</div>",
-        unsafe_allow_html=True
+        f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>" +
+        f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True
     )
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Successful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance,
+                st.session_state.selected_down, st.session_state.selected_distance,
                 st.session_state.coverage, True
             ])
             st.session_state.current_play = None
@@ -157,8 +181,7 @@ if play is not None:
         if st.button("❌ Unsuccessful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance,
+                st.session_state.selected_down, st.session_state.selected_distance,
                 st.session_state.coverage, False
             ])
             st.session_state.current_play = None
@@ -173,6 +196,5 @@ if play is not None:
 
 # --- Footer ---
 st.markdown(
-    "<div class='button-row-flex'><img src='https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png' width='260'></div>",
-    unsafe_allow_html=True
+    "<div class='button-row-flex'><img src='https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png' width='260'></div>", unsafe_allow_html=True
 )
