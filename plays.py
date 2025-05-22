@@ -48,73 +48,88 @@ def load_data():
 
 df = load_data()
 
-# --- UI layout and styling ---
+# --- App Styling ---
 st.markdown("""
     <style>
     html, body, .main, .block-container {
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
+        padding: 0;
+        margin: 0;
+        max-width: 100vw;
+        overflow-x: hidden;
+        background-color: #f5f7fa;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .title {
+        text-align: center;
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        font-weight: bold;
+    }
+    .section {
+        padding: 1.5rem;
+        background-color: white;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .section h3 {
+        margin-bottom: 1rem;
     }
     .highlight-box {
-        border-left: 5px solid #28a745;
-        background-color: #d4edda;
-        padding: 12px 15px;
-        border-radius: 6px;
-        margin: 0.5rem auto;
-        font-size: 0.95em;
-        max-width: 700px;
+        border-left: 6px solid #28a745;
+        background-color: #e6f4ea;
+        padding: 16px 20px;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        margin-top: 1rem;
     }
     .highlight-flex {
         display: flex;
-        flex-wrap: wrap;
         justify-content: space-between;
-        gap: 10px;
+        flex-wrap: wrap;
     }
     .highlight-item {
-        min-width: 120px;
         flex: 1;
-    }
-    .bg-footer {
-        text-align: center;
-        margin-top: 1rem;
+        margin-right: 2rem;
     }
     .button-row-flex {
         display: flex;
-        gap: 2rem;
         justify-content: center;
+        gap: 2rem;
         margin-top: 2rem;
     }
-    .button-row-flex button, .select-btn button {
-        font-size: 2.2rem !important;
-        padding: 1.25rem 2.5rem !important;
-        font-weight: 800 !important;
+    button[kind="primary"], .stButton > button {
+        font-size: 1.5rem !important;
+        padding: 0.75rem 2rem !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🏈 Play Caller Assistant")
+st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
-# --- UI Controls as actual buttons ---
-st.markdown("### Game Situation")
+# --- Controls Section ---
+st.markdown("<div class='section'>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown("**Down**")
+    st.markdown("#### Down")
     for d in ["1st", "2nd", "3rd"]:
         if st.button(d, key=f"down_{d}"):
             st.session_state.selected_down = d
     st.markdown(f"Selected: **{st.session_state.selected_down}**")
 
 with col2:
-    st.markdown("**Distance**")
+    st.markdown("#### Distance")
     for d in ["short", "medium", "long"]:
         if st.button(d, key=f"dist_{d}"):
             st.session_state.selected_distance = d
     st.markdown(f"Selected: **{st.session_state.selected_distance}**")
 
 with col3:
-    coverage = st.slider("Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
+    coverage = st.slider("#### Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
 def filter_by_depth(df, down, distance):
@@ -191,10 +206,10 @@ if st.button("🟢 Call a Play", key="call_play"):
 play = st.session_state.current_play
 if play is not None:
     st.markdown(f"""
-    <div class=\"highlight-box\">
-        <div class=\"highlight-flex\">
-            <div class=\"highlight-item\"><strong>Formation:</strong><br>{play['Formation']}</div>
-            <div class=\"highlight-item\"><strong>Play Name:</strong><br>{play['Play Name']}</div>
+    <div class='section highlight-box'>
+        <div class='highlight-flex'>
+            <div class='highlight-item'><strong>Formation:</strong><br>{play['Formation']}</div>
+            <div class='highlight-item'><strong>Play Name:</strong><br>{play['Play Name']}</div>
         </div>
     </div>""", unsafe_allow_html=True)
 
