@@ -8,7 +8,6 @@ from datetime import datetime
 
 # --- Connect to Google Sheet ---
 @st.cache_resource
-
 def connect_to_gsheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
@@ -37,7 +36,6 @@ if "selected_distance" not in st.session_state:
 
 # --- Load and prepare data ---
 @st.cache_data
-
 def load_data():
     df = pd.read_excel("play_database_cleaned_download.xlsx")
     rpo_keywords = ["rpo", "screen"]
@@ -72,13 +70,10 @@ st.markdown("""
         margin-bottom: 1.5rem;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .section h3 {
-        margin-bottom: 1rem;
-    }
     .highlight-box {
         border-left: 6px solid #28a745;
         background-color: #e6f4ea;
-        padding: 16px 20px;
+        padding: 16px;
         border-radius: 10px;
         font-size: 1.1rem;
         margin-top: 1rem;
@@ -87,10 +82,6 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
-    }
-    .highlight-item {
-        flex: 1;
-        margin-right: 2rem;
     }
     .button-row-flex {
         display: flex;
@@ -105,25 +96,14 @@ st.markdown("""
         flex-wrap: wrap;
         margin-bottom: 1rem;
     }
-    .option-button {
-        padding: 0.75rem 1.5rem;
-        font-size: 1.2rem;
-        border: none;
-        border-radius: 8px;
-        background-color: #e9ecef;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    .option-button.selected {
-        background-color: #007bff;
-        color: white;
-        font-weight: bold;
-    }
-    button[kind="primary"], .stButton > button {
-        font-size: 1.5rem !important;
-        padding: 0.75rem 2rem !important;
+    .stButton > button {
+        font-size: 1.2rem !important;
+        padding: 0.75rem 1.5rem !important;
         border-radius: 8px !important;
-        font-weight: bold !important;
+    }
+    .selected {
+        background-color: #007bff !important;
+        color: white !important;
     }
     @media (max-width: 768px) {
         .option-buttons {
@@ -146,10 +126,15 @@ with col1:
     st.markdown("#### Down")
     st.markdown("<div class='option-buttons'>", unsafe_allow_html=True)
     for d in ["1st", "2nd", "3rd"]:
-        button_class = "option-button selected" if st.session_state.selected_down == d else "option-button"
-        if st.button(f"{d}", key=f"down_{d}"):
+        btn = st.button(d, key=f"down_{d}")
+        if btn:
             st.session_state.selected_down = d
-        st.markdown(f"<button disabled class='{button_class}'>{d}</button>", unsafe_allow_html=True)
+        # apply selected class via JS-less hack: rerender with st.markdown
+        if st.session_state.selected_down == d:
+            st.markdown(
+                f"<script>document.getElementsByTagName('button')[document.getElementsByTagName('button').length-1].classList.add('selected');</script>",
+                unsafe_allow_html=True
+            )
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown(f"Selected: **{st.session_state.selected_down}**")
 
@@ -157,10 +142,14 @@ with col2:
     st.markdown("#### Distance")
     st.markdown("<div class='option-buttons'>", unsafe_allow_html=True)
     for d in ["short", "medium", "long"]:
-        button_class = "option-button selected" if st.session_state.selected_distance == d else "option-button"
-        if st.button(f"{d}", key=f"dist_{d}"):
+        btn = st.button(d, key=f"dist_{d}")
+        if btn:
             st.session_state.selected_distance = d
-        st.markdown(f"<button disabled class='{button_class}'>{d}</button>", unsafe_allow_html=True)
+        if st.session_state.selected_distance == d:
+            st.markdown(
+                f"<script>document.getElementsByTagName('button')[document.getElementsByTagName('button').length-1].classList.add('selected');</script>",
+                unsafe_allow_html=True
+            )
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown(f"Selected: **{st.session_state.selected_distance}**")
 
@@ -171,11 +160,8 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
 def filter_by_depth(df, down, distance):
-    if down == "1st":
-        return df
-    if down == "2nd" and distance == "long":
-        return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
-    if down == "3rd" and distance == "long":
+    if down == "1st": return df
+    if down in ["2nd","3rd"] and distance == "long":
         return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
     return df
 
@@ -184,41 +170,27 @@ def suggest_play():
     distance = st.session_state.selected_distance
     subset = filter_by_depth(df, down, distance)
     weights = {
-        ("1st", None): {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3},
-        ("2nd", "long"): {"dropback": 0.7, "rpo": 0.3, "run_option": 0.0},
-        ("3rd", "long"): {"dropback": 1.0, "rpo": 0.0, "run_option": 0.0},
-    }.get((down, distance), {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2})
-
-    available = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"] == cat].empty]
-    if not available:
-        return None
-
-    category = random.choices(
-        population=available,
-        weights=[weights[cat] for cat in available],
-        k=1
-    )[0]
-
-    pool = subset[subset["Play Type Category Cleaned"] == category].copy()
-    if pool.empty:
-        return None
-
-    if category == "dropback":
-        man = pool["Effective vs Man"].fillna(0.5)
-        zone = pool["Effective vs Zone"].fillna(0.5)
-        pool["Score"] = (1 - st.session_state.coverage) * man + st.session_state.coverage * zone
+        ("1st", None): {"dropback":0.4,"rpo":0.3,"run_option":0.3},
+        ("2nd","long"): {"dropback":0.7,"rpo":0.3,"run_option":0.0},
+        ("3rd","long"): {"dropback":1.0,"rpo":0.0,"run_option":0.0},
+    }.get((down,distance),{"dropback":0.5,"rpo":0.3,"run_option":0.2})
+    available=[c for c in weights if not subset[subset["Play Type Category Cleaned"]==c].empty]
+    if not available: return None
+    category=random.choices(available,weights=[weights[c] for c in available],k=1)[0]
+    pool=subset[subset["Play Type Category Cleaned"]==category].copy()
+    if category=="dropback":
+        man=pool["Effective vs Man"].fillna(0.5)
+        zone=pool["Effective vs Zone"].fillna(0.5)
+        pool["Score"]=(1-st.session_state.coverage)*man+st.session_state.coverage*zone
     else:
-        pool["Score"] = 0.5
-
-    top = pool.nlargest(10, "Score")
+        pool["Score"]=0.5
+    top=pool.nlargest(10,"Score")
     return top.sample(1).iloc[0] if not top.empty else None
 
 # --- Google Sheet Interaction ---
 def load_favorites():
-    try:
-        return set(fav_sheet.col_values(1))
-    except:
-        return set()
+    try: return set(fav_sheet.col_values(1))
+    except: return set()
 
 def add_favorite(play_id):
     try:
@@ -229,51 +201,48 @@ def add_favorite(play_id):
         st.error(f"Could not add favorite: {e}")
 
 def log_play_result(play_name, down, distance, coverage, success):
-    row = [datetime.now().isoformat(), play_name, down, distance, coverage, success]
+    row=[datetime.now().isoformat(),play_name,down,distance,coverage,success]
     try:
         results_sheet.append_row(row)
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful' }.", icon="👏")
-        st.session_state.current_play = None
+        st.toast(f"Play logged as {'successful' if success else 'unsuccessful'}.",icon="👏")
+        st.session_state.current_play=None
     except Exception as e:
-        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
+        st.error(f"❌ Failed to write to sheet: {e}")
 
 # --- Main Interaction ---
-if st.button("🟢 Call a Play", key="call_play"):
-    st.session_state.current_play = suggest_play()
+if st.button("🟢 Call a Play",key="call_play"):
+    st.session_state.current_play=suggest_play()
 
-play = st.session_state.current_play
+play=st.session_state.current_play
 if play is not None:
     st.markdown(f"""
     <div class='section highlight-box'>
         <div class='highlight-flex'>
-            <div class='highlight-item'><strong>Formation:</strong><br>{play['Formation']}</div>
-            <div class='highlight-item'><strong>Play Name:</strong><br>{play['Play Name']}</div>
+            <div><strong>Formation:</strong> {play['Formation']}</div>
+            <div><strong>Play Name:</strong> {play['Play Name']}</div>
         </div>
-    </div>""", unsafe_allow_html=True)
-
-    st.markdown("""<div class='button-row-flex'>""", unsafe_allow_html=True)
-    col1, col2 = st.columns([1, 1])
+    </div>""",unsafe_allow_html=True)
+    st.markdown("<div class='button-row-flex'>",unsafe_allow_html=True)
+    col1,col2=st.columns(2)
     with col1:
-        if st.button("✅ Successful", key="success_btn"):
-            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage, True)
+        if st.button("✅ Successful",key="success_btn"):
+            log_play_result(play['Play Name'], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage,True)
     with col2:
-        if st.button("❌ Unsuccessful", key="fail_btn"):
-            log_play_result(play["Play Name"], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage, False)
-    st.markdown("""</div>""", unsafe_allow_html=True)
-
+        if st.button("❌ Unsuccessful",key="fail_btn"):
+            log_play_result(play['Play Name'], st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage,False)
+    st.markdown("</div>",unsafe_allow_html=True)
     with st.expander("More Details"):
-        st.markdown(f"**Adjustments**: {play['Route Adjustments']}")
-        st.markdown(f"**Progression**: {play['Progression']}")
-        st.markdown(f"**Notes**: {play['Notes']}")
-
-    if play["Play ID"] not in st.session_state.favorites:
+        st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
+        st.write(f"**Progression**: {play.get('Progression','')}")
+        st.write(f"**Notes**: {play.get('Notes','')}")
+    if play['Play ID'] not in st.session_state.favorites:
         if st.button("🌟 Add to Favorites"):
-            add_favorite(play["Play ID"])
+            add_favorite(play['Play ID'])
     else:
-        st.info("⭐ Favorited play (ID match)")
+        st.info("⭐ Favorited play")
 
 st.markdown("""
-    <div class=\"bg-footer\">
-        <img src=\"https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png\" width=\"260\">
-    </div>
-""", unsafe_allow_html=True)
+<div class=\"bg-footer\">
+    <img src=\"https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png\" width=\"260\">
+</div>
+""",unsafe_allow_html=True)
