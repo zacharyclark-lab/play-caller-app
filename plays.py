@@ -31,14 +31,13 @@ if "current_play" not in st.session_state:
 @st.cache_data
 def load_data():
     df = pd.read_excel("play_database_cleaned_download.xlsx")
+    rpo_keywords = ["rpo", "screen"]
+    df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
+        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
+    )
     return df
 
 df = load_data()
-
-rpo_keywords = ["rpo", "screen"]
-df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
-    lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
-)
 
 # --- UI layout and styling ---
 st.markdown("""
@@ -147,122 +146,18 @@ coverage_label = (
     "Balanced"
 )
 
+# --- Filtering logic ---
 def filter_by_depth(df, down, distance):
     if down == "1st":
-        return df.copy()
+        return df
     if down == "2nd":
         if distance == "long":
-            return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)].copy()
+            return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
         else:
-            return df.copy()
+            return df
     if down == "3rd":
         if distance == "long":
-            return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)].copy()
+            return df[df["Play Depth"].str.contains("medium|long", case=False, na=False)]
         else:
-            return df.copy()
-    return df.copy()
-
-def suggest_play():
-    subset = filter_by_depth(df, down, distance)
-
-    if down == "1st":
-        weights = {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3}
-    elif down == "2nd" and distance == "long":
-        weights = {"dropback": 0.7, "rpo": 0.3, "run_option": 0.0}
-    elif down == "3rd" and distance == "long":
-        weights = {"dropback": 1.0, "rpo": 0.0, "run_option": 0.0}
-    else:
-        weights = {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2}
-
-    available = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"] == cat].empty]
-    if not available:
-        return None
-
-    category = random.choices(
-        population=available,
-        weights=[weights[cat] for cat in available],
-        k=1
-    )[0]
-
-    pool = subset[subset["Play Type Category Cleaned"] == category].copy()
-    if pool.empty:
-        return None
-
-    def score(row):
-        if category == "dropback":
-            man = row["Effective vs Man"] if pd.notnull(row["Effective vs Man"]) else 0.5
-            zone = row["Effective vs Zone"] if pd.notnull(row["Effective vs Zone"]) else 0.5
-            return (1 - coverage) * man + coverage * zone
-        else:
-            return 0.5
-
-    pool["Score"] = pool.apply(score, axis=1)
-    top = pool.sort_values("Score", ascending=False).head(10)
-    return top.sample(1).iloc[0] if not top.empty else None
-
-def load_favorites():
-    try:
-        fav_ids = fav_sheet.col_values(1)
-        return set(fav_ids)
-    except:
-        return set()
-
-def add_favorite(play_id):
-    try:
-        fav_sheet.append_row([play_id])
-        st.toast("🌟 Added to favorites!")
-    except Exception as e:
-        st.error(f"Could not add favorite: {e}")
-
-favorites = load_favorites()
-
-def log_play_result(play_name, down, distance, coverage, success):
-    timestamp = datetime.now().isoformat()
-    row = [timestamp, play_name, down, distance, coverage, success]
-    try:
-        results_sheet.append_row(row)
-        st.toast(f"Play logged as {'successful' if success else 'unsuccessful' }.", icon="👏")
-        st.session_state.current_play = None
-    except Exception as e:
-        st.error(f"❌ Failed to write to sheet: {e}", icon="❌")
-
-if st.button("🟢 Call a Play", key="call_play"):
-    st.session_state.current_play = suggest_play()
-
-play = st.session_state.current_play
-if play is not None:
-    st.markdown("""<div class=\"highlight-box\" style=\"margin-top: 0.5rem !important;\">
-            <div class="highlight-flex">
-                <div class="highlight-item">
-                    <strong>Formation:</strong><br>{}
-                </div>
-                <div class="highlight-item">
-                    <strong>Play Name:</strong><br>{}
-                </div>
-            </div>
-        </div>
-    """.format(play['Formation'], play['Play Name']), unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Successful", key="success_btn", help="Mark this play as successful"):
-            log_play_result(play["Play Name"], down, distance, coverage, True)
-    with col2:
-        if st.button("❌ Unsuccessful", key="fail_btn", help="Mark this play as unsuccessful"):
-            log_play_result(play["Play Name"], down, distance, coverage, False)
-
-    st.markdown(f"**Adjustments**: {play['Route Adjustments']}", unsafe_allow_html=True)
-    st.markdown(f"**Progression**: {play['Progression']}", unsafe_allow_html=True)
-    st.markdown(f"**Notes**: {play['Notes']}", unsafe_allow_html=True)
-
-    if play["Play ID"] not in favorites:
-        if st.button("🌟 Add to Favorites"):
-            add_favorite(play["Play ID"])
-    else:
-        st.info("⭐ Favorited play (ID match)")
-
-st.markdown("""
-    <div class="bg-footer">
-        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
-    </div>
-""", unsafe_allow_html=True)
+            return df
+    return df
