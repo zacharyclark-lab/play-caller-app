@@ -78,19 +78,19 @@ st.markdown("""
     }
     .button-row-flex {
         display: flex;
-        gap: 1rem;
+        gap: 2rem;
         justify-content: center;
-        margin-top: 1rem;
+        margin-top: 2rem;
     }
     .button-row-flex button {
-        font-size: 1.4rem !important;
-        padding: 1rem 2rem !important;
-        font-weight: bold !important;
+        font-size: 2.2rem !important;
+        padding: 1.25rem 2.5rem !important;
+        font-weight: 800 !important;
     }
     button[kind="primary"] {
-        font-size: 1.4rem !important;
-        padding: 1rem 2rem !important;
-        font-weight: bold !important;
+        font-size: 2.2rem !important;
+        padding: 1.25rem 2.5rem !important;
+        font-weight: 800 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -106,15 +106,6 @@ with col2:
     distance = st.radio("Distance", ["short", "medium", "long"], horizontal=False, key="distance_radio")
 with col3:
     coverage = st.slider("Coverage", 0.0, 1.0, 0.5, 0.01, key="coverage")
-    st.markdown("""
-        <div class="slider-labels">
-            <span>Strictly Man</span><br>
-            <span>Mainly Man</span><br>
-            <span>Balanced</span><br>
-            <span>Mainly Zone</span><br>
-            <span>Strictly Zone</span>
-        </div>
-    """, unsafe_allow_html=True)
 
 # --- Play Suggestion Logic ---
 def filter_by_depth(df, down, distance):
@@ -218,7 +209,7 @@ if play is not None:
         st.info("⭐ Favorited play (ID match)")
 
 st.markdown("""
-    <div class="bg-footer">
-        <img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260">
+    <div class=\"bg-footer\">
+        <img src=\"https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png\" width=\"260\">
     </div>
 """, unsafe_allow_html=True)
