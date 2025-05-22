@@ -64,55 +64,16 @@ def load_styles(css_path: str = "styles.css"):
     Load CSS styles from an external file, or apply fallback inline CSS.
     """
     default_css = """
-    .main .block-container {
-        max-width: 700px;
-        padding: 1rem 1.5rem;
-    }
-    .title {
-        text-align: center;
-        font-size: 2.5rem;
-        margin-top: 1rem;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-    }
-    /* Style for radio-as-buttons */
-    .stRadio>label { display: none; }
-    .stRadio [role="radiogroup"] {
-        display: flex;
-        gap: 0.5rem;
-        margin: 0.5rem 0;
-    }
-    .stRadio input[type="radio"] { display: none; }
-    .stRadio input[type="radio"] + label {
-        flex: 1;
-        text-align: center;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-    .stRadio input[type="radio"]:checked + label {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
-    }
-    .controls { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; }
-    .controls > div { flex: 1; }
-    .stSlider>div { padding: 0; }
-    .play-box {
-        border-left: 4px solid #28a745;
-        background-color: #e6f4ea;
-        padding: 1rem;
-        border-radius: 6px;
-        margin-bottom: 1rem;
-    }
+    .main .block-container { max-width: 700px; padding: 1rem 1.5rem; }
+    .title { text-align: center; font-size: 2.5rem; margin: 1rem 0; font-weight: 700; }
+    .play-box { border-left: 4px solid #28a745; background-color: #e6f4ea;
+                padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
     """
     try:
         with open(css_path) as f:
             css = f.read()
         st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
     except FileNotFoundError:
-        # Apply inline fallback CSS if external file not found
         st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
 
 load_styles()
@@ -129,7 +90,15 @@ with col2:
     st.radio("Distance", ["short","medium","long"],
              index=["short","medium","long"].index(st.session_state.selected_distance), key="selected_distance")
 with col3:
-    st.slider("Coverage", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
+    # Coverage slider between Man (0) and Zone (1)
+    coverage_val = st.slider("Coverage (Man vs Zone)", 0.0, 1.0, st.session_state.coverage, 0.05, key="coverage")
+    st.session_state.coverage = coverage_val
+    # Custom labels beneath slider
+    st.markdown(
+        "<div style='display:flex; justify-content: space-between; font-size:0.9rem;'>"
+        "<span>Man</span><span>Zone</span></div>",
+        unsafe_allow_html=True
+    )
 
 # --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage):
@@ -137,9 +106,9 @@ def suggest_play(df, down, distance, coverage):
     if down in ["2nd", "3rd"] and distance == "long":
         subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
     weights = {
-        ("1st", None):     {"dropback": 0.3, "rpo": 0.35, "run_option": 0.35},
-        ("2nd","long"):  {"dropback": 0.6, "rpo": 0.3,  "run_option": 0.1},
-        ("3rd","long"):  {"dropback": 1.0, "rpo": 0.0,  "run_option": 0.0}
+        ("1st", None):    {"dropback": 0.3,  "rpo": 0.35, "run_option": 0.35},
+        ("2nd","long"): {"dropback": 0.6,  "rpo": 0.3,  "run_option": 0.1},
+        ("3rd","long"): {"dropback": 1.0,  "rpo": 0.0,  "run_option": 0.0}
     }.get((down, distance), {"dropback": 0.4, "rpo": 0.35, "run_option": 0.25})
     candidates = [cat for cat in weights if not subset[subset["Play Type Category Cleaned"]==cat].empty]
     if not candidates:
@@ -158,22 +127,26 @@ def suggest_play(df, down, distance, coverage):
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
     st.session_state.current_play = suggest_play(
-        df, st.session_state.selected_down, st.session_state.selected_distance, st.session_state.coverage
+        df, st.session_state.selected_down,
+        st.session_state.selected_distance,
+        st.session_state.coverage
     )
 
 # --- Display Selected Play ---
 play = st.session_state.current_play
 if play is not None:
     st.markdown(
-        f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>" +
-        f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True
+        f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
+        f"<strong>Play:</strong> {play['Play Name']}</div>",
+        unsafe_allow_html=True
     )
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Successful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down, st.session_state.selected_distance,
+                st.session_state.selected_down,
+                st.session_state.selected_distance,
                 st.session_state.coverage, True
             ])
             st.session_state.current_play = None
@@ -181,7 +154,8 @@ if play is not None:
         if st.button("❌ Unsuccessful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down, st.session_state.selected_distance,
+                st.session_state.selected_down,
+                st.session_state.selected_distance,
                 st.session_state.coverage, False
             ])
             st.session_state.current_play = None
