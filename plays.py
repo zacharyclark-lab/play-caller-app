@@ -111,7 +111,6 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-""", unsafe_allow_html=True)
 
 # --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
