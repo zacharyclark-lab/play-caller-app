@@ -94,26 +94,33 @@ with col3:
 # --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage):
     subset = df.copy()
+    # Filter for deeper down-and-distance
     if down in ["2nd", "3rd"] and distance == "long":
         subset = subset[
             subset["Play Depth"].str.contains("medium|long", case=False, na=False)
         ]
+    # Adjusted weights to favor runs and RPOs more
     weights = {
-        ("1st", None):   {"dropback": 0.4, "rpo": 0.3, "run_option": 0.3},
-        ("2nd","long"): {"dropback": 0.7, "rpo": 0.3, "run_option": 0.0},
-        ("3rd","long"): {"dropback": 1.0, "rpo": 0.0, "run_option": 0.0}
-    }.get((down, distance), {"dropback": 0.5, "rpo": 0.3, "run_option": 0.2})
-    candidates = [c for c in weights if not subset[
-        subset["Play Type Category Cleaned"]==c
+        ("1st", None):     {"dropback": 0.3, "rpo": 0.35, "run_option": 0.35},
+        ("2nd","long"):  {"dropback": 0.6, "rpo": 0.3,  "run_option": 0.1},
+        ("3rd","long"):  {"dropback": 1.0, "rpo": 0.0,  "run_option": 0.0}
+    }.get(
+        (down, distance), {"dropback": 0.4, "rpo": 0.35, "run_option": 0.25}
+    )
+    # Determine available categories
+    candidates = [cat for cat in weights if not subset[
+        subset["Play Type Category Cleaned"] == cat
     ].empty]
     if not candidates:
         return None
-    cat = random.choices(candidates, weights=[weights[c] for c in candidates], k=1)[0]
-    pool = subset[subset["Play Type Category Cleaned"]==cat].copy()
-    if cat == "dropback":
+    # Randomly select category according to adjusted weights
+    chosen_cat = random.choices(candidates, weights=[weights[c] for c in candidates], k=1)[0]
+    pool = subset[subset["Play Type Category Cleaned"] == chosen_cat].copy()
+    # Score dropback plays by coverage and effectiveness
+    if chosen_cat == "dropback":
         man = pool["Effective vs Man"].fillna(0.5)
         zone = pool["Effective vs Zone"].fillna(0.5)
-        pool["Score"] = (1-coverage)*man + coverage*zone
+        pool["Score"] = (1 - coverage) * man + coverage * zone
     else:
         pool["Score"] = 0.5
     top = pool.nlargest(10, "Score")
