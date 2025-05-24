@@ -23,6 +23,7 @@ def connect_to_gsheet():
         st.error(f"Unable to connect to Google Sheets: {e}")
         return None
 
+# Attempt connection and halt if unsuccessful
 sheet = connect_to_gsheet()
 if sheet is None:
     st.stop()
@@ -108,8 +109,8 @@ if st.session_state.kb_mode:
     st.button("", key="hotkey_trigger")
 
     # 2) JS to map keys to hidden button clicks and URL param
-components.html(
-    """
+    components.html(
+        """
 <script>
 window.addEventListener('keydown', e => {
     const k = e.key;
@@ -122,9 +123,9 @@ window.addEventListener('keydown', e => {
     }
 });
 </script>
-    """,
-    height=0
-)
+        """,
+        height=0
+    )
 
     # 3) On rerun, check URL param and invoke suggest_play
     params = st.query_params
