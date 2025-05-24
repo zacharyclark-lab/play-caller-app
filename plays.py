@@ -65,6 +65,7 @@ def load_styles(css_path: str = "styles.css"):
 
 load_styles()
 
+# --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Sidebar Controls ---
@@ -113,10 +114,8 @@ if st.session_state.kb_mode:
 window.addEventListener('keydown', e => {
     const k = e.key;
     if (['1','2','3'].includes(k)) {
-        // click hidden Streamlit button
         const btn = window.parent.document.querySelector('button[k=\\"hotkey_trigger\\"]');
         if (btn) btn.click();
-        // set URL param for key
         const url = new URL(window.parent.location);
         url.searchParams.set('hotkey', k);
         window.parent.history.replaceState(null, '', url);
@@ -131,7 +130,7 @@ window.addEventListener('keydown', e => {
     params = st.query_params
     if 'hotkey' in params:
         k = params['hotkey'][0]
-        st.experimental_set_query_params()  # clear param
+        st.experimental_set_query_params()
         mapping = {'1':('1st','long'), '2':('2nd','long'), '3':('3rd','long')}
         if k in mapping:
             down, dist = mapping[k]
@@ -175,9 +174,7 @@ if play is not None:
         st.write(f"**Notes**: {play.get('Notes','')}")
 
 # --- Footer ---
-```python
 st.markdown(
-    "<div class='button-row-flex'><img src='https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png' width='260'></div>",
+    '<div class="button-row-flex"><img src="https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png" width="260"></div>',
     unsafe_allow_html=True
 )
-```
