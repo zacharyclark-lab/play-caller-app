@@ -1,10 +1,10 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import random
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+from streamlit_shortcuts import on_key
 
 # --- Google Sheets Connection ---
 @st.cache_resource
@@ -71,7 +71,7 @@ st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_
 
 # --- Sidebar Controls ---
 st.sidebar.markdown("## ⚙️ Controls")
-st.sidebar.checkbox("Enable Keyboard Mode", key="kb_mode")
+st.sidebar.checkbox("Enable Keyboard Mode (1=1st&long,2=2nd&long,3=3rd&long)", key="kb_mode")
 
 # --- Main Controls ---
 st.markdown("### Select Down & Distance")
@@ -89,7 +89,7 @@ def suggest_play(df, down, distance, coverage=None):
         ("1st", "long"): {"dropback": .33, "rpo": .33, "run_option": .34},
         ("2nd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
         ("2nd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
-        ("2nd", "long"): {"dropback": .6, "rpo": .3, "run_option": .1},
+        ("2nd", "long"): {"dropback": .6,  "rpo": .3,  "run_option": .1},
         ("3rd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
         ("3rd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
         ("3rd", "long"): {"dropback": .85, "rpo": .075, "run_option": .075},
@@ -103,41 +103,16 @@ def suggest_play(df, down, distance, coverage=None):
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
-# --- Keyboard-Mode Capture via Hidden Button ---
+# --- Keyboard Shortcut Handler ---
 if st.session_state.kb_mode:
-    # 1) Hidden trigger button
-    st.button("", key="hotkey_trigger")
-
-    # 2) JS to map keys to hidden button clicks and URL param
-    components.html(
-        """
-<script>
-window.addEventListener('keydown', e => {
-    const k = e.key;
-    if (['1','2','3'].includes(k)) {
-        const btns = document.querySelectorAll('button[data-testid="stButton"]');
-        if (btns.length > 0) btns[0].click();
-        const url = new URL(window.location);
-        url.searchParams.set('hotkey', k);
-        window.history.replaceState(null, '', url);
-    }
-});
-</script>
-        """,
-        height=0
-    )
-
-    # 3) On rerun, check URL param and invoke suggest_play
-    params = st.query_params
-    if 'hotkey' in params:
-        k = params['hotkey'][0]
-        st.experimental_set_query_params()
-        mapping = {'1':('1st','long'), '2':('2nd','long'), '3':('3rd','long')}
+    def handle_key(k):
+        mapping = {"1": ("1st", "long"), "2": ("2nd", "long"), "3": ("3rd", "long")}
         if k in mapping:
             down, dist = mapping[k]
             st.session_state.selected_down = down
             st.session_state.selected_distance = dist
             st.session_state.current_play = suggest_play(df, down, dist)
+    on_key(["1", "2", "3"], handle_key)
 
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
