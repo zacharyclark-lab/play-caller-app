@@ -46,7 +46,6 @@ def load_data():
     )
     return df
 
-# Load dataframe
 df = load_data()
 
 # --- Styling ---
@@ -74,17 +73,8 @@ st.sidebar.checkbox("Enable Keyboard Mode", key="kb_mode")
 
 # --- Main Controls ---
 st.markdown("### Select Down & Distance")
-# Tie radio directly to session state without index to avoid conflicts
-st.radio(
-    "Down", ["1st", "2nd", "3rd"],
-    key="selected_down",
-    horizontal=True
-)
-st.radio(
-    "Distance", ["short", "medium", "long"],
-    key="selected_distance",
-    horizontal=True
-)
+st.radio("Down", ["1st", "2nd", "3rd"], key="selected_down", horizontal=True)
+st.radio("Distance", ["short", "medium", "long"], key="selected_distance", horizontal=True)
 
 # --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage=None):
@@ -103,8 +93,7 @@ def suggest_play(df, down, distance, coverage=None):
         ("3rd", "long"): {"dropback": .85, "rpo": .075, "run_option": .075},
     }
     weights = weight_table.get((down, distance), {"dropback": .33, "rpo": .33, "run_option": .34})
-    available = {cat: w for cat, w in weights.items()
-                 if not subset[subset["Play Type Category Cleaned"] == cat].empty}
+    available = {cat: w for cat, w in weights.items() if not subset[subset["Play Type Category Cleaned"] == cat].empty}
     if not available:
         return None
     cats, wts = zip(*available.items())
@@ -112,47 +101,43 @@ def suggest_play(df, down, distance, coverage=None):
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
-# --- Keyboard-Mode Capture ---
+# --- Keyboard-Mode Capture via Hidden Button ---
 if st.session_state.kb_mode:
+    # 1) Hidden trigger button
+    st.button("", key="hotkey_trigger")
+
+    # 2) JS to map keys to hidden button clicks and URL param
     components.html(
         """
 <script>
-const focusLoop = setInterval(() => {
-    const inp = window.parent.document.querySelector('input[data-key="key_input"]');
-    if (inp) {
-        inp.focus();
-        clearInterval(focusLoop);
-    }
-}, 100);
-window.addEventListener('keydown', (e) => {
+window.addEventListener('keydown', e => {
     const k = e.key;
     if (['1','2','3'].includes(k)) {
-        const inp = window.parent.document.querySelector('input[data-key="key_input"]');
-        if (inp) {
-            inp.value = k;
-            inp.dispatchEvent(new Event('input', { bubbles: true }));
-        }
+        // click hidden Streamlit button
+        const btn = window.parent.document.querySelector('button[k=\\"hotkey_trigger\\"]');
+        if (btn) btn.click();
+        // set URL param for key
+        const url = new URL(window.parent.location);
+        url.searchParams.set('hotkey', k);
+        window.parent.history.replaceState(null, '', url);
     }
 });
 </script>
         """,
         height=0
     )
-    key_map = {"1": ("1st", "long"), "2": ("2nd", "long"), "3": ("3rd", "long")}    
-    def handle_key():
-        key = st.session_state.key_input
-        if key in key_map:
-            down, dist = key_map[key]
+
+    # 3) On rerun, check URL param and invoke suggest_play
+    params = st.experimental_get_query_params()
+    if 'hotkey' in params:
+        k = params['hotkey'][0]
+        st.experimental_set_query_params()  # clear param
+        mapping = {'1':('1st','long'), '2':('2nd','long'), '3':('3rd','long')}
+        if k in mapping:
+            down, dist = mapping[k]
             st.session_state.selected_down = down
             st.session_state.selected_distance = dist
             st.session_state.current_play = suggest_play(df, down, dist)
-            st.session_state.key_input = ""
-    st.text_input(
-        "", key="key_input",
-        max_chars=1,
-        label_visibility="collapsed",
-        on_change=handle_key
-    )
 
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
@@ -171,16 +156,14 @@ if play is not None:
         if st.button("✅ Successful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance, None, True
+                st.session_state.selected_down, st.session_state.selected_distance, None, True
             ])
             st.session_state.current_play = None
     with col2:
         if st.button("❌ Unsuccessful"):
             results_sheet.append_row([
                 datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance, None, False
+                st.session_state.selected_down, st.session_state.selected_distance, None, False
             ])
             st.session_state.current_play = None
     if st.button("🌟 Add to Favorites"):
