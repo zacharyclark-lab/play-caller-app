@@ -193,9 +193,19 @@ st.markdown(
     """
     <script>
       document.addEventListener('keydown', e => {
-        if (e.key === 's') document.querySelector('button[key=\"succ\"]').click();
-        if (e.key === 'f') document.querySelector('button[key=\"fail\"]').click();
-        if (e.key === 'n') document.querySelector('button[key=\"call\"]').click();
+        const buttons = Array.from(document.getElementsByTagName('button'));
+        if (e.key === 's') {
+          const btn = buttons.find(b => b.innerText.trim() === '✅ Successful');
+          if (btn) btn.click();
+        }
+        if (e.key === 'f') {
+          const btn = buttons.find(b => b.innerText.trim() === '❌ Unsuccessful');
+          if (btn) btn.click();
+        }
+        if (e.key === 'n') {
+          const btn = buttons.find(b => b.innerText.trim() === '🟢 Call a Play');
+          if (btn) btn.click();
+        }
       });
     </script>
     """, unsafe_allow_html=True
