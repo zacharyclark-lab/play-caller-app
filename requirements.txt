@@ -3,5 +3,5 @@ pandas
 openpyxl
 gspread
 oauth2client
-streamlit-shortcuts
-streamlit-shortcuts
+streamlit-shortcuts==0.0.2
+
