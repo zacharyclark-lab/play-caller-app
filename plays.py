@@ -188,33 +188,11 @@ with st.expander("📊 Success Rate by Category"):
     except Exception:
         st.write("Analytics unavailable.")
 
-# Keyboard shortcuts
-st.markdown(
-    """
-    <script>
-      // Listen on parent window for key events
-      window.parent.addEventListener('keydown', event => {
-        const keys = event.key;
-        // Select only Streamlit buttons
-        const buttons = Array.from(document.querySelectorAll('button[data-testid="stButton"]'));
-        if (keys === 's') {
-          const btn = buttons.find(b => b.textContent.trim() === '✅ Successful');
-          if (btn) btn.click();
-        }
-        if (keys === 'f') {
-          const btn = buttons.find(b => b.textContent.trim() === '❌ Unsuccessful');
-          if (btn) btn.click();
-        }
-        if (keys === 'n') {
-          const btn = buttons.find(b => b.textContent.trim() === '🟢 Call a Play');
-          if (btn) btn.click();
-        }
-      });
-    </script>
-    """, unsafe_allow_html=True
-)
+# (Keyboard shortcuts removed due to Streamlit sandboxing limitations)
 
 # Flush logs button
+if st.button("Flush Logs"):
+    flush_buffers()
 if st.button("Flush Logs"):
     flush_buffers()
 if st.button("Flush Logs"):
