@@ -87,61 +87,18 @@ st.sidebar.checkbox("Enable Keyboard Mode", key="kb_mode")
 
 # --- Main Controls ---
 st.markdown("### Select Down & Distance")
-# Down radio
 st.radio(
     "Down", ["1st", "2nd", "3rd"],
     index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
     key="selected_down",
     horizontal=True
 )
-# Distance radio
 st.radio(
     "Distance", ["short", "medium", "long"],
     index=["short", "medium", "long"].index(st.session_state.selected_distance),
     key="selected_distance",
     horizontal=True
 )
-
-# --- Keyboard-Mode Capture ---
-if st.session_state.kb_mode:
-    # JavaScript to auto-focus hidden input\ n    components.html(
-        """
-        <script>
-        const focusLoop = setInterval(() => {
-            const inp = window.parent.document.querySelector('input[data-key="key_input"]');
-            if (inp) {
-                inp.focus();
-                clearInterval(focusLoop);
-            }
-        }, 100);
-        document.addEventListener('click', () => {
-            const inp = window.parent.document.querySelector('input[data-key="key_input"]');
-            if (inp) inp.focus();
-        });
-        </script>
-        """,
-        height=0,
-    )
-    # hidden text_input to receive keystrokes
-    key = st.text_input(
-        "", key="key_input",
-        max_chars=1,
-        label_visibility="collapsed",
-        placeholder="Press 1,2,3…"
-    )
-    # map key to down/distance and suggest play
-    key_map = {
-        "1": ("1st", "long"),
-        "2": ("2nd", "long"),
-        "3": ("3rd", "long"),
-    }
-    if key in key_map:
-        down, dist = key_map[key]
-        st.session_state.selected_down = down
-        st.session_state.selected_distance = dist
-        st.session_state.current_play = suggest_play(df, down, dist)
-        st.session_state.key_input = ""
-        st.experimental_rerun()
 
 # --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage=None):
@@ -157,7 +114,7 @@ def suggest_play(df, down, distance, coverage=None):
         ("2nd", "long"):   {"dropback":  .6,  "rpo":  .3,  "run_option": .1},
         ("3rd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
         ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("3rd", "long"):   {"dropback": .85,  "rpo": .075,"run_option": .075},
+        ("3rd", "long"):   {"dropback": .85,  "rpo": .075, "run_option": .075},
     }
     weights = weight_table.get((down, distance), {"dropback": .33, "rpo": .33, "run_option": .34})
     available = {cat: w for cat, w in weights.items()
@@ -168,6 +125,48 @@ def suggest_play(df, down, distance, coverage=None):
     chosen_cat = random.choices(cats, weights=wts, k=1)[0]
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
+
+# --- Keyboard-Mode Capture ---
+if st.session_state.kb_mode:
+    # JavaScript to auto-focus hidden input
+    components.html(
+        """
+<script>
+const focusLoop = setInterval(() => {
+    const inp = window.parent.document.querySelector('input[data-key="key_input"]');
+    if (inp) {
+        inp.focus();
+        clearInterval(focusLoop);
+    }
+}, 100);
+document.addEventListener('click', () => {
+    const inp = window.parent.document.querySelector('input[data-key="key_input"]');
+    if (inp) inp.focus();
+});
+</script>
+        """,
+        height=0
+    )
+    # Hidden text_input to receive keystrokes
+    key = st.text_input(
+        "", key="key_input",
+        max_chars=1,
+        label_visibility="collapsed",
+        placeholder="Press 1,2,3…"
+    )
+    # Map key to down/distance and suggest play
+    key_map = {
+        "1": ("1st", "long"),
+        "2": ("2nd", "long"),
+        "3": ("3rd", "long"),
+    }
+    if key in key_map:
+        down, dist = key_map[key]
+        st.session_state.selected_down = down
+        st.session_state.selected_distance = dist
+        st.session_state.current_play = suggest_play(df, down, dist)
+        st.session_state.key_input = ""
+        st.experimental_rerun()
 
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
@@ -206,7 +205,7 @@ if play is not None:
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
-        st.write(f"**Notes**: {play.get('Notes','')}")
+        st.write(f"**Notes**: {play.get('Notes','')}" )
 
 # --- Footer ---
 st.markdown(
