@@ -192,18 +192,21 @@ with st.expander("📊 Success Rate by Category"):
 st.markdown(
     """
     <script>
-      document.addEventListener('keydown', e => {
-        const buttons = Array.from(document.getElementsByTagName('button'));
-        if (e.key === 's') {
-          const btn = buttons.find(b => b.innerText.trim() === '✅ Successful');
+      // Listen on parent window for key events
+      window.parent.addEventListener('keydown', event => {
+        const keys = event.key;
+        // Select only Streamlit buttons
+        const buttons = Array.from(document.querySelectorAll('button[data-testid="stButton"]'));
+        if (keys === 's') {
+          const btn = buttons.find(b => b.textContent.trim() === '✅ Successful');
           if (btn) btn.click();
         }
-        if (e.key === 'f') {
-          const btn = buttons.find(b => b.innerText.trim() === '❌ Unsuccessful');
+        if (keys === 'f') {
+          const btn = buttons.find(b => b.textContent.trim() === '❌ Unsuccessful');
           if (btn) btn.click();
         }
-        if (e.key === 'n') {
-          const btn = buttons.find(b => b.innerText.trim() === '🟢 Call a Play');
+        if (keys === 'n') {
+          const btn = buttons.find(b => b.textContent.trim() === '🟢 Call a Play');
           if (btn) btn.click();
         }
       });
@@ -212,5 +215,7 @@ st.markdown(
 )
 
 # Flush logs button
+if st.button("Flush Logs"):
+    flush_buffers()
 if st.button("Flush Logs"):
     flush_buffers()
