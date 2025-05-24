@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import random
 import gspread
@@ -53,6 +54,7 @@ def load_data():
     )
     return df
 
+# Load dataframe
 df = load_data()
 
 # --- Styling ---
@@ -73,21 +75,26 @@ def load_styles(css_path: str = "styles.css"):
     except FileNotFoundError:
         st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
 
+# Apply styles
 load_styles()
 
 # --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
-# --- Controls Section ---
+# --- Sidebar Controls ---
+st.sidebar.markdown("## ⚙️ Controls")
+st.sidebar.checkbox("Enable Keyboard Mode", key="kb_mode")
+
+# --- Main Controls ---
 st.markdown("### Select Down & Distance")
-# Render Down choices as a horizontal radio button group
+# Down radio
 st.radio(
     "Down", ["1st", "2nd", "3rd"],
     index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
     key="selected_down",
     horizontal=True
 )
-# Render Distance choices as a horizontal radio button group
+# Distance radio
 st.radio(
     "Distance", ["short", "medium", "long"],
     index=["short", "medium", "long"].index(st.session_state.selected_distance),
@@ -95,7 +102,48 @@ st.radio(
     horizontal=True
 )
 
-# --- Suggest Play Logic (Coverage Ignored) ---
+# --- Keyboard-Mode Capture ---
+if st.session_state.kb_mode:
+    # JavaScript to auto-focus hidden input\ n    components.html(
+        """
+        <script>
+        const focusLoop = setInterval(() => {
+            const inp = window.parent.document.querySelector('input[data-key="key_input"]');
+            if (inp) {
+                inp.focus();
+                clearInterval(focusLoop);
+            }
+        }, 100);
+        document.addEventListener('click', () => {
+            const inp = window.parent.document.querySelector('input[data-key="key_input"]');
+            if (inp) inp.focus();
+        });
+        </script>
+        """,
+        height=0,
+    )
+    # hidden text_input to receive keystrokes
+    key = st.text_input(
+        "", key="key_input",
+        max_chars=1,
+        label_visibility="collapsed",
+        placeholder="Press 1,2,3…"
+    )
+    # map key to down/distance and suggest play
+    key_map = {
+        "1": ("1st", "long"),
+        "2": ("2nd", "long"),
+        "3": ("3rd", "long"),
+    }
+    if key in key_map:
+        down, dist = key_map[key]
+        st.session_state.selected_down = down
+        st.session_state.selected_distance = dist
+        st.session_state.current_play = suggest_play(df, down, dist)
+        st.session_state.key_input = ""
+        st.experimental_rerun()
+
+# --- Suggest Play Logic ---
 def suggest_play(df, down, distance, coverage=None):
     subset = df.copy()
     if down in ("2nd", "3rd") and distance == "long":
@@ -111,8 +159,7 @@ def suggest_play(df, down, distance, coverage=None):
         ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
         ("3rd", "long"):   {"dropback": .85,  "rpo": .075,"run_option": .075},
     }
-    weights = weight_table.get((down, distance),
-                               {"dropback": .33, "rpo": .33, "run_option": .34})
+    weights = weight_table.get((down, distance), {"dropback": .33, "rpo": .33, "run_option": .34})
     available = {cat: w for cat, w in weights.items()
                  if not subset[subset["Play Type Category Cleaned"] == cat].empty}
     if not available:
@@ -148,7 +195,7 @@ if play is not None:
     with col2:
         if st.button("❌ Unsuccessful"):
             results_sheet.append_row([
-                datetime.now().isoformat(), play[' Play Name'],
+                datetime.now().isoformat(), play['Play Name'],
                 st.session_state.selected_down,
                 st.session_state.selected_distance, None, False
             ])
