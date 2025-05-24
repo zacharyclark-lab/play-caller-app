@@ -108,40 +108,23 @@ if st.session_state.kb_mode:
     st.button("", key="hotkey_trigger")
 
     # 2) JS to map keys to hidden button clicks and URL param
-        components.html(
-        """
+components.html(
+    """
 <script>
 window.addEventListener('keydown', e => {
     const k = e.key;
     if (['1','2','3'].includes(k)) {
-        // click the first Streamlit button (our hidden trigger is rendered first)
         const btns = document.querySelectorAll('button[data-testid="stButton"]');
-        if (btns.length > 0) {
-            btns[0].click();
-        }
-        // update URL param
+        if (btns.length > 0) btns[0].click();
         const url = new URL(window.location);
         url.searchParams.set('hotkey', k);
         window.history.replaceState(null, '', url);
     }
 });
 </script>
-        """,
-        height=0
-    )) {
-        // find hidden button by its aria-label
-        const btn = document.querySelector('button[aria-label="hotkey_trigger"]');
-        if (btn) btn.click();
-        // update URL param
-        const url = new URL(window.location);
-        url.searchParams.set('hotkey', k);
-        window.history.replaceState(null, '', url);
-    }
-});
-</script>
-        """,
-        height=0
-    )
+    """,
+    height=0
+)
 
     # 3) On rerun, check URL param and invoke suggest_play
     params = st.query_params
