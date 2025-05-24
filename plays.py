@@ -30,7 +30,7 @@ WEIGHT_TABLE = {
     ("2nd", "long"):   {"dropback":  .6,  "rpo":  .3,  "run_option": .1},
     ("3rd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
     ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-    ("3rd", "long"):   {"dropback": .85,  "rpo": .075,"run_option": .075},
+    ("3rd", "long"):   {"dropback": .85,  "rpo": .075, "run_option": .075},
 }
 
 # --- Batch Buffers ---
@@ -86,12 +86,19 @@ def load_data():
 
 # --- Play Suggestion Logic ---
 def suggest_play(df, down, distance, coverage=None):
+    """
+    Suggest a play based on down, distance, and optional coverage.
+    """
     subset = df.copy()
-    if coverage:
+    # Only filter by coverage if the column exists
+    if coverage and 'Coverage' in subset.columns:
         subset = subset[subset['Coverage'].str.contains(coverage, case=False, na=False)]
+    # Handle long distance on 2nd/3rd downs
     if down in ('2nd', '3rd') and distance == 'long':
-        subset = subset[subset['Play Depth'].str.contains('medium|long', case=False, na=False)]
+        if 'Play Depth' in subset.columns:
+            subset = subset[subset['Play Depth'].str.contains('medium|long', case=False, na=False)]
     weights = WEIGHT_TABLE.get((down, distance), {})
+    # Filter out empty categories
     available = {cat: w for cat, w in weights.items()
                  if not subset[subset['Play Type Category Cleaned'] == cat].empty}
     if not available:
@@ -103,6 +110,7 @@ def suggest_play(df, down, distance, coverage=None):
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Play Caller Assistant", layout="centered")
+
 # Load styles
 try:
     with open(CSS_PATH) as f:
@@ -115,6 +123,7 @@ except FileNotFoundError:
         "border-radius:6px; margin-bottom:1rem; }</style>",
         unsafe_allow_html=True
     )
+
 # Title
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
@@ -142,10 +151,9 @@ with col3:
     coverage = st.selectbox("Coverage", ["", "man", "zone", "blitz"])
 
 # Call a play
-def call_play():
+if st.button("🟢 Call a Play", key="call"):
     play = suggest_play(df, down, distance, coverage)
     st.session_state.current_play = play
-if st.button("🟢 Call a Play", key="call"): call_play()
 
 # Display play
 play = st.session_state.get('current_play')
@@ -158,11 +166,17 @@ if play is not None:
     c1, c2, c3 = st.columns([1,1,1], gap="small")
     with c1:
         if st.button("✅ Successful", key="succ"):
-            pending_results.append([datetime.now().isoformat(), play['Play Name'], down, distance, coverage, True])
+            pending_results.append([
+                datetime.now().isoformat(),
+                play['Play Name'], down, distance, coverage, True
+            ])
             st.session_state.current_play = None
     with c2:
         if st.button("❌ Unsuccessful", key="fail"):
-            pending_results.append([datetime.now().isoformat(), play['Play Name'], down, distance, coverage, False])
+            pending_results.append([
+                datetime.now().isoformat(),
+                play['Play Name'], down, distance, coverage, False
+            ])
             st.session_state.current_play = None
     with c3:
         if st.button("🌟 Favorite", key="fav"):
@@ -171,7 +185,7 @@ if play is not None:
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
-        st.write(f"**Notes**: {play.get('Notes','')}")
+        st.write(f"**Notes**: {play.get('Notes','')}**")
 
 # Analytics
 with st.expander("📊 Success Rate by Category"):
@@ -187,8 +201,6 @@ with st.expander("📊 Success Rate by Category"):
         st.pyplot(fig)
     except Exception:
         st.write("Analytics unavailable.")
-
-# (Keyboard shortcuts removed due to Streamlit sandboxing limitations)
 
 # Flush logs button
 if st.button("Flush Logs"):
