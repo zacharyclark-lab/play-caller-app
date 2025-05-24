@@ -193,7 +193,3 @@ with st.expander("📊 Success Rate by Category"):
 # Flush logs button
 if st.button("Flush Logs"):
     flush_buffers()
-if st.button("Flush Logs"):
-    flush_buffers()
-if st.button("Flush Logs"):
-    flush_buffers()
