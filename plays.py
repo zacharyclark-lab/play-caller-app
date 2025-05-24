@@ -1,168 +1,267 @@
-import streamlit as st
-import pandas as pd
-import random
+# config.py
+"""
+Configuration constants for Play Caller Assistant
+"""
+
+# Google Sheets
+GSHEET_NAME = "PlayCaller Logs"
+WORKSHEET_RESULTS = "results"
+WORKSHEET_FAVORITES = "favorite_plays"
+
+# Local database
+PLAY_DB_PATH = "play_database_cleaned_download.xlsx"
+
+# CSS
+CSS_PATH = "styles.css"
+
+# Play logic
+RPO_KEYWORDS = ["rpo", "screen"]
+WEIGHT_TABLE = {
+    ("1st", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("1st", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("1st", "long"):   {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("2nd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("2nd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("2nd", "long"):   {"dropback":  .6,  "rpo":  .3,  "run_option": .1},
+    ("3rd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
+    ("3rd", "long"):   {"dropback": .85,  "rpo": .075,"run_option": .075},
+}
+
+# Defaults
+FALLBACK_CSV = "fallback_logs.csv"
+
+
+# gsheets.py
+"""
+Google Sheets connection and batch write logic.
+"""
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+from typing import Optional, List, Dict, Any
+from config import GSHEET_NAME, WORKSHEET_RESULTS, WORKSHEET_FAVORITES, FALLBACK_CSV
+import pandas as pd
+import asyncio
 
-# --- Google Sheets Connection ---
-@st.cache_resource
-def connect_to_gsheet():
-    """
-    Connect to the Google Sheets document using service account credentials.
-    Cached resource to avoid reconnecting unnecessarily.
-    """
+# Sync fallback
+
+def _append_to_csv(path: str, rows: List[List[Any]]):
+    df = pd.DataFrame(rows)
+    df.to_csv(path, mode='a', header=False, index=False)
+
+# Cached sync client
+from functools import lru_cache
+@lru_cache()
+def get_gsheet_client() -> Optional[gspread.Spreadsheet]:
     try:
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            st.secrets["gcp_service_account"], scope
+            __import__('streamlit').secrets['gcp_service_account'], scope
         )
         client = gspread.authorize(creds)
-        return client.open("PlayCaller Logs")
-    except Exception as e:
-        st.error(f"Unable to connect to Google Sheets: {e}")
+        return client.open(GSHEET_NAME)
+    except Exception:
         return None
 
-# Attempt connection and halt if unsuccessful
-sheet = connect_to_gsheet()
-if sheet is None:
-    st.stop()
+# Batch logs in memory
+pending_results: List[List[Any]] = []
+pending_favorites: List[List[Any]] = []
 
-results_sheet = sheet.worksheet("results")
-fav_sheet = sheet.worksheet("favorite_plays")
+def buffer_result(row: List[Any]):
+    pending_results.append(row)
 
-# --- Session State Defaults ---
-st.session_state.setdefault("current_play", None)
-st.session_state.setdefault("favorites", set())
-st.session_state.setdefault("selected_down", "1st")
-st.session_state.setdefault("selected_distance", "short")
+def buffer_favorite(row: List[Any]):
+    pending_favorites.append(row)
 
-# --- Data Loading ---
+async def flush_buffers():
+    sheet = get_gsheet_client()
+    if sheet:
+        results_ws = sheet.worksheet(WORKSHEET_RESULTS)
+        fav_ws = sheet.worksheet(WORKSHEET_FAVORITES)
+        for r in pending_results:
+            try:
+                results_ws.append_row(r)
+            except Exception:
+                _append_to_csv(FALLBACK_CSV, [r])
+        for r in pending_favorites:
+            try:
+                fav_ws.append_row(r)
+            except Exception:
+                _append_to_csv(FALLBACK_CSV, [r])
+    else:
+        _append_to_csv(FALLBACK_CSV, pending_results + pending_favorites)
+    pending_results.clear()
+    pending_favorites.clear()
+
+# data.py
+"""
+Data loading and preprocessing.
+"""
+import pandas as pd
+from config import PLAY_DB_PATH, RPO_KEYWORDS
+import streamlit as st
+
 @st.cache_data(show_spinner=False)
-def load_data():
-    """
-    Load and preprocess play data from Excel, cleaning RPO keywords.
-    """
-    df = pd.read_excel("play_database_cleaned_download.xlsx")
-    rpo_keywords = ["rpo", "screen"]
-    df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
-        lambda x: "rpo" if any(k in str(x).lower() for k in rpo_keywords) else x
+def load_data() -> pd.DataFrame:
+    df = pd.read_excel(PLAY_DB_PATH)
+    df['Play Type Category Cleaned'] = (
+        df['Play Type Category']
+        .apply(lambda x: 'rpo' if any(k in str(x).lower() for k in RPO_KEYWORDS) else x)
     )
     return df
 
-df = load_data()
+# plays.py
+"""
+Play suggestion logic.
+"""
+import pandas as pd
+import random
+from typing import Optional
+from config import WEIGHT_TABLE
 
-# --- Styling ---
-def load_styles(css_path: str = "styles.css"):
-    """
-    Load CSS styles from an external file, or apply fallback inline CSS.
-    """
-    default_css = """
-    .main .block-container { max-width: 700px; padding: 1rem 1.5rem; }
-    .title { text-align: center; font-size: 2.5rem; margin: 1rem 0; font-weight: 700; }
-    .play-box { border-left: 4px solid #28a745; background-color: #e6f4ea;
-                padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    """
-    try:
-        with open(css_path) as f:
-            css = f.read()
-        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
 
-load_styles()
-
-# --- App Title ---
-st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
-
-# --- Controls Section ---
-st.markdown("### Select Down & Distance")
-# Render Down choices as a horizontal radio button group
-st.radio(
-    "Down", ["1st", "2nd", "3rd"],
-    index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
-    key="selected_down",
-    horizontal=True
-)
-# Render Distance choices as a horizontal radio button group
-st.radio(
-    "Distance", ["short", "medium", "long"],
-    index=["short", "medium", "long"].index(st.session_state.selected_distance),
-    key="selected_distance",
-    horizontal=True
-)
-
-# --- Suggest Play Logic (Coverage Ignored) ---
-def suggest_play(df, down, distance, coverage=None):
+def suggest_play(
+    df: pd.DataFrame,
+    down: str,
+    distance: str,
+    coverage: Optional[str] = None
+) -> Optional[pd.Series]:
     subset = df.copy()
-    if down in ("2nd", "3rd") and distance == "long":
-        subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
-    weight_table = {
-        ("1st", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("1st", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("1st", "long"):   {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "long"):   {"dropback":  .6,  "rpo":  .3,  "run_option": .1},
-        ("3rd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("3rd", "long"):   {"dropback": .85,  "rpo": .075,"run_option": .075},
-    }
-    weights = weight_table.get((down, distance),
-                               {"dropback": .33, "rpo": .33, "run_option": .34})
+    # Filter by distance and coverage (future: add coverage filtering)
+    if coverage:
+        subset = subset[subset['Coverage'].str.contains(coverage, case=False, na=False)]
+    if down in ('2nd', '3rd') and distance == 'long':
+        subset = subset[subset['Play Depth'].str.contains('medium|long', case=False, na=False)]
+    weights = WEIGHT_TABLE.get((down, distance), {})
     available = {cat: w for cat, w in weights.items()
-                 if not subset[subset["Play Type Category Cleaned"] == cat].empty}
+                 if not subset[subset['Play Type Category Cleaned'] == cat].empty}
     if not available:
         return None
     cats, wts = zip(*available.items())
     chosen_cat = random.choices(cats, weights=wts, k=1)[0]
-    pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
+    pool = subset[subset['Play Type Category Cleaned'] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
-# --- Main Interaction ---
-if st.button("🟢 Call a Play"):
-    st.session_state.current_play = suggest_play(
-        df,
-        st.session_state.selected_down,
-        st.session_state.selected_distance
-    )
+# ui.py
+"""
+Streamlit UI: theming, controls, analytics, keyboard shortcuts.
+"""
+import streamlit as st
+from datetime import datetime
+from config import CSS_PATH
+from data import load_data
+from plays import suggest_play
+from gsheets import (
+    buffer_result, buffer_favorite, flush_buffers, get_gsheet_client
+)
+import matplotlib.pyplot as plt
+import asyncio
 
-# --- Display Selected Play ---
-play = st.session_state.current_play
+# Page config & theme
+st.set_page_config(page_title="Play Caller Assistant", layout="centered", initial_sidebar_state="expanded")
+
+# Load styles
+try:
+    with open(CSS_PATH) as f:
+        css = f.read()
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+except FileNotFoundError:
+    st.markdown("""
+    <style>.main .block-container { max-width: 700px; padding: 1rem 1.5rem; }
+    .title { text-align: center; font-size: 2.5rem; margin: 1rem 0; font-weight: 700; }
+    .play-box { border-left: 4px solid #28a745; background-color: #e6f4ea;
+                padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Sidebar: Favorites & Stats
+st.sidebar.header("⭐ My Favorites")
+fav_ids = []
+if get_gsheet_client():
+    fav_ids = get_gsheet_client().worksheet(st.secrets['favorite_plays']).col_values(1)
+st.sidebar.write(fav_ids)
+
+# Main title
+st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
+
+df = load_data()
+
+# Controls: Down, Distance, Coverage, Search
+st.markdown("### Select Down, Distance & Coverage")
+col1, col2, col3 = st.columns(3)
+with col1:
+    down = st.radio("Down", ["1st","2nd","3rd"], horizontal=True)
+with col2:
+    distance = st.radio("Distance", ["short","medium","long"], horizontal=True)
+with col3:
+    coverage = st.selectbox("Coverage", ["", "man", "zone", "blitz"])
+
+search_term = st.text_input("🔍 Search Plays", key="search")
+
+# Suggestion
+if st.button("🟢 Call a Play"):
+    play = suggest_play(df, down, distance, coverage)
+    st.session_state.current_play = play
+
+play = st.session_state.get('current_play')
 if play is not None:
     st.markdown(
         f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
-        f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
+        f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True
+    )
+    st.image(f"https://myrepo/plays/{play['Play ID']}.png", caption=play['Play Name'])
+    # success/failure buttons
+    c1, c2, c3 = st.columns([1,1,1], gap="small")
+    with c1:
         if st.button("✅ Successful"):
-            results_sheet.append_row([
-                datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance, None, True
-            ])
+            buffer_result([datetime.now().isoformat(), play['Play Name'], down, distance, coverage, True])
             st.session_state.current_play = None
-    with col2:
+    with c2:
         if st.button("❌ Unsuccessful"):
-            results_sheet.append_row([
-                datetime.now().isoformat(), play[' Play Name'],
-                st.session_state.selected_down,
-                st.session_state.selected_distance, None, False
-            ])
+            buffer_result([datetime.now().isoformat(), play['Play Name'], down, distance, coverage, False])
             st.session_state.current_play = None
-    if st.button("🌟 Add to Favorites"):
-        fav_sheet.append_row([play['Play ID']])
-        st.session_state.favorites.add(play['Play ID'])
+    with c3:
+        if st.button("🌟 Add to Favorites"):
+            buffer_favorite([play['Play ID']])
+            st.sidebar.write(play['Play ID'])
+    # Details
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
         st.write(f"**Notes**: {play.get('Notes','')}")
 
-# --- Footer ---
-st.markdown(
-    "<div class='button-row-flex'><img src='https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png' width='260'></div>",
-    unsafe_allow_html=True
-)
+# Analytics
+with st.expander("📊 Success Rate by Category"):
+    try:
+        import pandas as pd
+        logs = pd.DataFrame(get_gsheet_client().worksheet(WORKSHEET_RESULTS).get_all_records())
+        stats = logs.groupby('Play Type Category').agg(
+            success_rate=('Successful','mean'), count=('Successful','size')
+        ).sort_values('count', ascending=False)
+        fig, ax = plt.subplots()
+        ax.bar(stats.index, stats['success_rate'])
+        ax.set_ylabel('Success Rate')
+        ax.set_xticklabels(stats.index, rotation=45, ha='right')
+        st.pyplot(fig)
+    except Exception:
+        st.write("Could not load analytics.")
+
+# Keyboard shortcuts (JS)
+st.markdown("""
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 's') document.querySelector('button[kind="primary"]').click();
+  if (e.key === 'f') document.querySelectorAll('button')[2].click();
+  if (e.key === 'n') document.querySelectorAll('button')[0].click();
+});
+</script>
+""", unsafe_allow_html=True)
+
+# Flush buffers periodically
+def _flush():
+    asyncio.run(flush_buffers())
+
+st.button("Flush Logs", on_click=_flush)
