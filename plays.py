@@ -126,7 +126,7 @@ def suggest_play(df, down, distance, coverage=None):
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
-# --- Keyboard-Mode Capture ---
+# --- Keyboard-Mode Capture with Callback ---
 if st.session_state.kb_mode:
     # JavaScript to auto-focus and capture keydown without needing Enter
     components.html(
@@ -139,7 +139,6 @@ const focusLoop = setInterval(() => {
         clearInterval(focusLoop);
     }
 }, 100);
-// Capture keydown and dispatch to Streamlit input immediately
 window.addEventListener('keydown', (e) => {
     const k = e.key;
     if (['1','2','3'].includes(k)) {
@@ -154,25 +153,27 @@ window.addEventListener('keydown', (e) => {
         """,
         height=0
     )
-    # Hidden text_input to receive keystrokes
-    key = st.text_input(
-        "", key="key_input",
-        max_chars=1,
-        label_visibility="collapsed"
-    )
-    # Map key to down/distance and suggest play
+    # Map key to down/distance
     key_map = {
         "1": ("1st", "long"),
         "2": ("2nd", "long"),
         "3": ("3rd", "long"),
     }
-    if key in key_map:
-        down, dist = key_map[key]
-        st.session_state.selected_down = down
-        st.session_state.selected_distance = dist
-        st.session_state.current_play = suggest_play(df, down, dist)
-        st.session_state.key_input = ""
-        st.experimental_rerun()
+    def handle_key():
+        key = st.session_state.key_input
+        if key in key_map:
+            down, dist = key_map[key]
+            st.session_state.selected_down = down
+            st.session_state.selected_distance = dist
+            st.session_state.current_play = suggest_play(df, down, dist)
+            st.session_state.key_input = ""
+    # Hidden text_input with on_change callback
+    st.text_input(
+        "", key="key_input",
+        max_chars=1,
+        label_visibility="collapsed",
+        on_change=handle_key
+    )
 
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
