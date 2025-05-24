@@ -85,16 +85,10 @@ def load_data():
     return df
 
 # --- Play Suggestion Logic ---
-def suggest_play(df, down, distance, coverage=None, search_term=None):
+def suggest_play(df, down, distance, coverage=None):
     subset = df.copy()
     if coverage:
         subset = subset[subset['Coverage'].str.contains(coverage, case=False, na=False)]
-    if search_term:
-        mask = (
-            subset['Play Name'].str.contains(search_term, case=False, na=False) |
-            subset['Formation'].str.contains(search_term, case=False, na=False)
-        )
-        subset = subset[mask]
     if down in ('2nd', '3rd') and distance == 'long':
         subset = subset[subset['Play Depth'].str.contains('medium|long', case=False, na=False)]
     weights = WEIGHT_TABLE.get((down, distance), {})
@@ -146,11 +140,10 @@ with col2:
     distance = st.radio("Distance", ["short","medium","long"], horizontal=True)
 with col3:
     coverage = st.selectbox("Coverage", ["", "man", "zone", "blitz"])
-search_term = st.text_input("🔍 Search Plays")
 
 # Call a play
 def call_play():
-    play = suggest_play(df, down, distance, coverage, search_term)
+    play = suggest_play(df, down, distance, coverage)
     st.session_state.current_play = play
 if st.button("🟢 Call a Play", key="call"): call_play()
 
