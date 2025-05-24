@@ -8,10 +8,18 @@ from datetime import datetime
 # Attempt to import on_key from streamlit-shortcuts; provide fallback if unavailable
 try:
     from streamlit_shortcuts import on_key
+    HAS_SHORTCUT = True
 except ImportError:
+    HAS_SHORTCUT = False
     def on_key(keys, func):
         # Fallback no-op: hotkeys won't work without the package
         pass
+
+# Inform user about hotkey availability
+if HAS_SHORTCUT:
+    st.sidebar.success("🔑 Hotkeys available! Press 1/2/3 when Keyboard Mode is on.")
+else:
+    st.sidebar.warning("⚠️ streamlit-shortcuts not installed; hotkeys disabled.")
 
 # --- Google Sheets Connection ---
 @st.cache_resource
