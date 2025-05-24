@@ -128,7 +128,7 @@ window.addEventListener('keydown', e => {
     )
 
     # 3) On rerun, check URL param and invoke suggest_play
-    params = st.experimental_get_query_params()
+    params = st.query_params
     if 'hotkey' in params:
         k = params['hotkey'][0]
         st.experimental_set_query_params()  # clear param
@@ -175,7 +175,9 @@ if play is not None:
         st.write(f"**Notes**: {play.get('Notes','')}")
 
 # --- Footer ---
+```python
 st.markdown(
     "<div class='button-row-flex'><img src='https://raw.githubusercontent.com/zacharyclark-lab/play-caller-app/main/football.png' width='260'></div>",
     unsafe_allow_html=True
 )
+```
