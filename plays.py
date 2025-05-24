@@ -5,22 +5,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
-# Attempt to import on_key from streamlit-shortcuts; provide fallback if unavailable
-try:
-    from streamlit_shortcuts import on_key
-    HAS_SHORTCUT = True
-except ImportError:
-    HAS_SHORTCUT = False
-    def on_key(keys, func):
-        # Fallback no-op: hotkeys won't work without the package
-        pass
-
-# Inform user about hotkey availability
-if HAS_SHORTCUT:
-    st.sidebar.success("🔑 Hotkeys available! Press 1/2/3 when Keyboard Mode is on.")
-else:
-    st.sidebar.warning("⚠️ streamlit-shortcuts not installed; hotkeys disabled.")
-
 # --- Google Sheets Connection ---
 @st.cache_resource
 def connect_to_gsheet():
@@ -38,7 +22,6 @@ def connect_to_gsheet():
         st.error(f"Unable to connect to Google Sheets: {e}")
         return None
 
-# Attempt connection and halt if unsuccessful
 sheet = connect_to_gsheet()
 if sheet is None:
     st.stop()
@@ -46,14 +29,13 @@ if sheet is None:
 results_sheet = sheet.worksheet("results")
 fav_sheet = sheet.worksheet("favorite_plays")
 
-# --- Session State Defaults ---
+# --- Session State ---
 st.session_state.setdefault("current_play", None)
-st.session_state.setdefault("favorites", set())
 st.session_state.setdefault("selected_down", "1st")
 st.session_state.setdefault("selected_distance", "short")
 
 # --- Data Loading ---
-@st.cache_data(show_spinner=False)
+@st.cache_data
 def load_data():
     df = pd.read_excel("play_database_cleaned_download.xlsx")
     rpo_keywords = ["rpo", "screen"]
@@ -62,39 +44,51 @@ def load_data():
     )
     return df
 
-# Load dataframe
 df = load_data()
 
 # --- Styling ---
-def load_styles(css_path: str = "styles.css"):
-    default_css = """
+def load_styles():
+    css = """
     .main .block-container { max-width: 700px; padding: 1rem 1.5rem; }
     .title { text-align: center; font-size: 2.5rem; margin: 1rem 0; font-weight: 700; }
     .play-box { border-left: 4px solid #28a745; background-color: #e6f4ea;
                 padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    .hotkey-buttons button { margin-right: 0.5rem; }
     """
-    try:
-        with open(css_path) as f:
-            css = f.read()
-        st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 load_styles()
 
 # --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
-# --- Sidebar Controls ---
+# --- Controls ---
 st.sidebar.markdown("## ⚙️ Controls")
-st.sidebar.checkbox("Enable Keyboard Mode (1=1st&long,2=2nd&long,3=3rd&long)", key="kb_mode")
+enable = st.sidebar.checkbox("Enable Keyboard Mode (on-screen buttons 1/2/3)")
 
-# --- Main Controls ---
 st.markdown("### Select Down & Distance")
 st.radio("Down", ["1st", "2nd", "3rd"], key="selected_down", horizontal=True)
 st.radio("Distance", ["short", "medium", "long"], key="selected_distance", horizontal=True)
 
-# --- Suggest Play Logic ---
+# --- Hotkey Buttons ---
+if enable:
+    st.markdown("**Keyboard Mode:** Click a button to call a play immediately (`1`=1st&long, `2`=2nd&long, `3`=3rd&long).")
+    mapping = {"1": ("1st", "long"), "2": ("2nd", "long"), "3": ("3rd", "long")}
+    cols = st.columns(3)
+    for idx, key in enumerate(mapping):
+        if cols[idx].button(f"{key}", key=f"hot_{key}"):
+            down, dist = mapping[key]
+            st.session_state.selected_down = down
+            st.session_state.selected_distance = dist
+            st.session_state.current_play = suggest_play(df, down, dist)
+
+# --- Call a Play Button ---
+if st.button("🟢 Call a Play"):
+    st.session_state.current_play = suggest_play(
+        df, st.session_state.selected_down, st.session_state.selected_distance
+    )
+
+# --- Display Suggested Play ---
 def suggest_play(df, down, distance, coverage=None):
     subset = df.copy()
     if down in ("2nd", "3rd") and distance == "long":
@@ -117,53 +111,27 @@ def suggest_play(df, down, distance, coverage=None):
     cats, wts = zip(*available.items())
     chosen_cat = random.choices(cats, weights=wts, k=1)[0]
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
-    return pool.sample(1).iloc[0] if not pool.empty else None
+    return pool.sample(1).iloc[0]
 
-# --- Keyboard Shortcut Handler ---
-if st.session_state.kb_mode:
-    def handle_key(k):
-        mapping = {"1": ("1st", "long"), "2": ("2nd", "long"), "3": ("3rd", "long")}
-        if k in mapping:
-            down, dist = mapping[k]
-            st.session_state.selected_down = down
-            st.session_state.selected_distance = dist
-            st.session_state.current_play = suggest_play(df, down, dist)
-    on_key(["1", "2", "3"], handle_key)
-
-# --- Main Interaction ---
-if st.button("🟢 Call a Play"):
-    st.session_state.current_play = suggest_play(
-        df, st.session_state.selected_down, st.session_state.selected_distance
-    )
-
-# --- Display Selected Play ---
 play = st.session_state.current_play
 if play is not None:
     st.markdown(
         f"<div class='play-box'><strong>Formation:</strong> {play['Formation']}<br>"
         f"<strong>Play:</strong> {play['Play Name']}</div>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Successful"):
-            results_sheet.append_row([
-                datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down, st.session_state.selected_distance, None, True
-            ])
-            st.session_state.current_play = None
-    with col2:
-        if st.button("❌ Unsuccessful"):
-            results_sheet.append_row([
-                datetime.now().isoformat(), play['Play Name'],
-                st.session_state.selected_down, st.session_state.selected_distance, None, False
-            ])
-            st.session_state.current_play = None
+    c1, c2 = st.columns(2)
+    if c1.button("✅ Successful"):
+        results_sheet.append_row([datetime.now().isoformat(), play['Play Name'], st.session_state.selected_down, st.session_state.selected_distance, None, True])
+        st.session_state.current_play = None
+    if c2.button("❌ Unsuccessful"):
+        results_sheet.append_row([datetime.now().isoformat(), play['Play Name'], st.session_state.selected_down, st.session_state.selected_distance, None, False])
+        st.session_state.current_play = None
     if st.button("🌟 Add to Favorites"):
         fav_sheet.append_row([play['Play ID']])
         st.session_state.favorites.add(play['Play ID'])
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
-        st.write(f"**Notes**: {play.get('Notes','')} ")
+        st.write(f"**Notes**: {play.get('Notes','')}")
 
 # --- Footer ---
 st.markdown(
