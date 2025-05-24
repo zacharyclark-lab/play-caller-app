@@ -128,7 +128,7 @@ def suggest_play(df, down, distance, coverage=None):
 
 # --- Keyboard-Mode Capture ---
 if st.session_state.kb_mode:
-    # JavaScript to auto-focus hidden input
+    # JavaScript to auto-focus and capture keydown without needing Enter
     components.html(
         """
 <script>
@@ -139,9 +139,16 @@ const focusLoop = setInterval(() => {
         clearInterval(focusLoop);
     }
 }, 100);
-document.addEventListener('click', () => {
-    const inp = window.parent.document.querySelector('input[data-key="key_input"]');
-    if (inp) inp.focus();
+// Capture keydown and dispatch to Streamlit input immediately
+window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (['1','2','3'].includes(k)) {
+        const inp = window.parent.document.querySelector('input[data-key="key_input"]');
+        if (inp) {
+            inp.value = k;
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
 });
 </script>
         """,
@@ -151,8 +158,7 @@ document.addEventListener('click', () => {
     key = st.text_input(
         "", key="key_input",
         max_chars=1,
-        label_visibility="collapsed",
-        placeholder="Press 1,2,3…"
+        label_visibility="collapsed"
     )
     # Map key to down/distance and suggest play
     key_map = {
@@ -205,7 +211,7 @@ if play is not None:
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
-        st.write(f"**Notes**: {play.get('Notes','')}" )
+        st.write(f"**Notes**: {play.get('Notes','')}")
 
 # --- Footer ---
 st.markdown(
