@@ -70,6 +70,31 @@ st.markdown("### Select Down & Distance")
 st.radio("Down", ["1st", "2nd", "3rd"], key="selected_down", horizontal=True)
 st.radio("Distance", ["short", "medium", "long"], key="selected_distance", horizontal=True)
 
+# --- Suggest Play Logic ---
+def suggest_play(df, down, distance, coverage=None):
+    subset = df.copy()
+    if down in ("2nd", "3rd") and distance == "long":
+        subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
+    weight_table = {
+        ("1st", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("1st", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("1st", "long"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "long"): {"dropback": .6,  "rpo": .3,  "run_option": .1},
+        ("3rd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("3rd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("3rd", "long"): {"dropback": .85, "rpo": .075, "run_option": .075},
+    }
+    weights = weight_table.get((down, distance), {"dropback": .33, "rpo": .33, "run_option": .34})
+    available = {cat: w for cat, w in weights.items() if not subset[subset["Play Type Category Cleaned"] == cat].empty}
+    if not available:
+        return None
+    cats, wts = zip(*available.items())
+    chosen_cat = random.choices(cats, weights=wts, k=1)[0]
+    pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
+    return pool.sample(1).iloc[0]
+
 # --- Hotkey Buttons ---
 if enable:
     st.markdown("**Keyboard Mode:** Click a button to call a play immediately (`1`=1st&long, `2`=2nd&long, `3`=3rd&long).")
@@ -78,6 +103,7 @@ if enable:
     for idx, key in enumerate(mapping):
         if cols[idx].button(f"{key}", key=f"hot_{key}"):
             down, dist = mapping[key]
+            # Update session state and immediately suggest play
             st.session_state.selected_down = down
             st.session_state.selected_distance = dist
             st.session_state.current_play = suggest_play(df, down, dist)
