@@ -114,11 +114,13 @@ if st.session_state.kb_mode:
 window.addEventListener('keydown', e => {
     const k = e.key;
     if (['1','2','3'].includes(k)) {
-        const btn = window.parent.document.querySelector('button[k=\\"hotkey_trigger\\"]');
+        // find hidden button by its aria-label
+        const btn = document.querySelector('button[aria-label="hotkey_trigger"]');
         if (btn) btn.click();
-        const url = new URL(window.parent.location);
+        // update URL param
+        const url = new URL(window.location);
         url.searchParams.set('hotkey', k);
-        window.parent.history.replaceState(null, '', url);
+        window.history.replaceState(null, '', url);
     }
 });
 </script>
