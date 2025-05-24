@@ -9,10 +9,6 @@ from datetime import datetime
 # --- Google Sheets Connection ---
 @st.cache_resource
 def connect_to_gsheet():
-    """
-    Connect to the Google Sheets document using service account credentials.
-    Cached resource to avoid reconnecting unnecessarily.
-    """
     try:
         scope = [
             "https://spreadsheets.google.com/feeds",
@@ -27,7 +23,6 @@ def connect_to_gsheet():
         st.error(f"Unable to connect to Google Sheets: {e}")
         return None
 
-# Attempt connection and halt if unsuccessful
 sheet = connect_to_gsheet()
 if sheet is None:
     st.stop()
@@ -44,9 +39,6 @@ st.session_state.setdefault("selected_distance", "short")
 # --- Data Loading ---
 @st.cache_data(show_spinner=False)
 def load_data():
-    """
-    Load and preprocess play data from Excel, cleaning RPO keywords.
-    """
     df = pd.read_excel("play_database_cleaned_download.xlsx")
     rpo_keywords = ["rpo", "screen"]
     df["Play Type Category Cleaned"] = df["Play Type Category"].apply(
@@ -59,9 +51,6 @@ df = load_data()
 
 # --- Styling ---
 def load_styles(css_path: str = "styles.css"):
-    """
-    Load CSS styles from an external file, or apply fallback inline CSS.
-    """
     default_css = """
     .main .block-container { max-width: 700px; padding: 1rem 1.5rem; }
     .title { text-align: center; font-size: 2.5rem; margin: 1rem 0; font-weight: 700; }
@@ -75,10 +64,8 @@ def load_styles(css_path: str = "styles.css"):
     except FileNotFoundError:
         st.markdown(f"<style>{default_css}</style>", unsafe_allow_html=True)
 
-# Apply styles
 load_styles()
 
-# --- App Title ---
 st.markdown("<div class='title'>🏈 Play Caller Assistant</div>", unsafe_allow_html=True)
 
 # --- Sidebar Controls ---
@@ -87,15 +74,14 @@ st.sidebar.checkbox("Enable Keyboard Mode", key="kb_mode")
 
 # --- Main Controls ---
 st.markdown("### Select Down & Distance")
+# Tie radio directly to session state without index to avoid conflicts
 st.radio(
     "Down", ["1st", "2nd", "3rd"],
-    index=["1st", "2nd", "3rd"].index(st.session_state.selected_down),
     key="selected_down",
     horizontal=True
 )
 st.radio(
     "Distance", ["short", "medium", "long"],
-    index=["short", "medium", "long"].index(st.session_state.selected_distance),
     key="selected_distance",
     horizontal=True
 )
@@ -106,15 +92,15 @@ def suggest_play(df, down, distance, coverage=None):
     if down in ("2nd", "3rd") and distance == "long":
         subset = subset[subset["Play Depth"].str.contains("medium|long", case=False, na=False)]
     weight_table = {
-        ("1st", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("1st", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("1st", "long"):   {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("2nd", "long"):   {"dropback":  .6,  "rpo":  .3,  "run_option": .1},
-        ("3rd", "short"):  {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("3rd", "medium"): {"dropback": .33,  "rpo": .33,  "run_option": .34},
-        ("3rd", "long"):   {"dropback": .85,  "rpo": .075, "run_option": .075},
+        ("1st", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("1st", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("1st", "long"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("2nd", "long"): {"dropback": .6, "rpo": .3, "run_option": .1},
+        ("3rd", "short"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("3rd", "medium"): {"dropback": .33, "rpo": .33, "run_option": .34},
+        ("3rd", "long"): {"dropback": .85, "rpo": .075, "run_option": .075},
     }
     weights = weight_table.get((down, distance), {"dropback": .33, "rpo": .33, "run_option": .34})
     available = {cat: w for cat, w in weights.items()
@@ -126,9 +112,8 @@ def suggest_play(df, down, distance, coverage=None):
     pool = subset[subset["Play Type Category Cleaned"] == chosen_cat]
     return pool.sample(1).iloc[0] if not pool.empty else None
 
-# --- Keyboard-Mode Capture with Callback ---
+# --- Keyboard-Mode Capture ---
 if st.session_state.kb_mode:
-    # JavaScript to auto-focus and capture keydown without needing Enter
     components.html(
         """
 <script>
@@ -153,12 +138,7 @@ window.addEventListener('keydown', (e) => {
         """,
         height=0
     )
-    # Map key to down/distance
-    key_map = {
-        "1": ("1st", "long"),
-        "2": ("2nd", "long"),
-        "3": ("3rd", "long"),
-    }
+    key_map = {"1": ("1st", "long"), "2": ("2nd", "long"), "3": ("3rd", "long")}    
     def handle_key():
         key = st.session_state.key_input
         if key in key_map:
@@ -167,7 +147,6 @@ window.addEventListener('keydown', (e) => {
             st.session_state.selected_distance = dist
             st.session_state.current_play = suggest_play(df, down, dist)
             st.session_state.key_input = ""
-    # Hidden text_input with on_change callback
     st.text_input(
         "", key="key_input",
         max_chars=1,
@@ -178,9 +157,7 @@ window.addEventListener('keydown', (e) => {
 # --- Main Interaction ---
 if st.button("🟢 Call a Play"):
     st.session_state.current_play = suggest_play(
-        df,
-        st.session_state.selected_down,
-        st.session_state.selected_distance
+        df, st.session_state.selected_down, st.session_state.selected_distance
     )
 
 # --- Display Selected Play ---
