@@ -4,7 +4,14 @@ import random
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
-from streamlit_shortcuts import on_key
+
+# Attempt to import on_key from streamlit-shortcuts; provide fallback if unavailable
+try:
+    from streamlit_shortcuts import on_key
+except ImportError:
+    def on_key(keys, func):
+        # Fallback no-op: hotkeys won't work without the package
+        pass
 
 # --- Google Sheets Connection ---
 @st.cache_resource
@@ -47,6 +54,7 @@ def load_data():
     )
     return df
 
+# Load dataframe
 df = load_data()
 
 # --- Styling ---
@@ -147,7 +155,7 @@ if play is not None:
     with st.expander("Details"):
         st.write(f"**Adjustments**: {play.get('Route Adjustments','')}")
         st.write(f"**Progression**: {play.get('Progression','')}")
-        st.write(f"**Notes**: {play.get('Notes','')}")
+        st.write(f"**Notes**: {play.get('Notes','')} ")
 
 # --- Footer ---
 st.markdown(
